@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinel-linux"
+version = "0.1.0"
+description = "Predict. Protect. Recover. An intelligent CLI stability layer for Linux."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "GurKalra", email = "85062798+GurKalra@users.noreply.github.com"}
+]
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0"
+]
+
+[project.scripts]
+sentinel = "sentinel.cli:app"
