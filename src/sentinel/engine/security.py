@@ -6,7 +6,7 @@ console = Console()
 
 def get_secure_boot_status():
     """Checks if Secure Boot is enabled, utilizing the RAM cache for speed."""
-    cache = get_cached_state()
+    cache = get_cached_state() or {}
     if "sb_enabled" in cache:
         return cache["sb_enabled"]
     
@@ -51,9 +51,9 @@ def analyze_security_risk(package_list):
     if not (kernel_changing or dkms_changing or shim_changing):
         return True
 
-    console.print("[bold blue]🛡️  Sentinel Security & Driver Audit...[/bold blue]")
+    console.print("[bold blue]Sentinel Security & Driver Audit...[/bold blue]")
     
-    sb_active = get_secure_boot_state()
+    sb_active = get_secure_boot_status()
     dkms_modules = get_dkms_modules()
     
     if shim_changing:

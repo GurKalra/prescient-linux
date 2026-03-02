@@ -54,9 +54,9 @@ def run_preflight_checks():
     #1. DPKG Health Check
     dpkg_ok, dpkg_log = check_dpkg_health()
     if(dpkg_ok):
-        console.print("  [green]✓[/green] Package Manager State: [bold green]Healthy[/bold green]")
+        console.print("  Package Manager State: [bold green]Healthy[/bold green]")
     else:
-        console.print("  [red]✗[/red] Package Manager State: [bold red]BROKEN[/bold red]")
+        console.print("  Package Manager State: [bold red]BROKEN[/bold red]")
         console.print(f"    [yellow]Reason:[/yellow] {dpkg_log.splitlines()[0] if dpkg_log else 'Unknown error'}")
         console.print("    [white]Run 'sudo apt install -f' to fix broken dependencies before updating.[/white]")
         is_safe = False

@@ -50,6 +50,6 @@ def analyze_boot_health(package_list):
     kernel_count = count_installed_kernels()
     if kernel_count >= 3:
         console.print(f"  Old Kernels Detected: [bold yellow]{kernel_count} installed[/bold yellow]")
-        console.print("   Run 'sudo apt autoremove' to clear old kernels and free up space.[/white]")
+        console.print("   [white]Run 'sudo apt autoremove' to clear old kernels and free up space.[/white]")
 
     return is_safe
