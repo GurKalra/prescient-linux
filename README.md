@@ -25,9 +25,13 @@ Sentinel does not replace your package manager. It performs deterministic pre-fl
 ## Core Features
 
 - **The Vanguard Engine (`sentinel predict`):** _(Live)_ A blazing-fast, RAM-cached (`/dev/shm`) transaction auditor. It evaluates incoming packages in under 200ms, pulling the emergency brake (`sys.exit(1)`) if it detects `/boot` partition saturation, a locked `dpkg` state, or a collision between new kernels and unsigned DKMS modules while Secure Boot is active.
+
 - **Universal Pre-Transaction Hooks:** _(Live)_ Native interceptors injected directly into package managers (using `DPkg::Pre-Install-Pkgs` for `apt`, with `pacman` support planned). Sentinel doesn't need to be run manually—it wakes up automatically at the point of no return.
+
 - **Automated Recovery Guardrails:** _(In Development)_ Context-aware integration with `timeshift` and native `btrfs`. Sentinel will only trigger a pre-transaction system snapshot when core boot-chain or critical services are actively threatened, keeping overhead to an absolute minimum.
+
 - **Pattern Interpretation (`sentinel diagnose`):** _(In Development)_ A post-crash logic engine that parses `journalctl -p 3 -b -1` errors. It translates cryptic kernel panics from a failed boot into human-readable English and highly specific, actionable terminal commands.
+
 - **Atomic Local Rollbacks & Rescue:** _(Planned)_ Strict, dependency-safe transaction reversals (`sentinel undo`) using the local `apt` cache, paired with a minimal, POSIX-compliant shell hook injected into `initramfs` for absolute worst-case emergency recovery.
 
 ## The North Stars of Sentinel
