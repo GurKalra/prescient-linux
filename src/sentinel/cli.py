@@ -1,4 +1,5 @@
 import typer
+from sentinel.hooks import install
 
 app = typer.Typer(help="Sentinel Linux: Predict, Protect, Recover")
 
@@ -11,6 +12,13 @@ def predict():
 def diagnose():
     """To analyze system logs and suggest fixes"""
     print("Sentinel Diagnose: Analyzing system logs...")
+
+@app.command()
+def install_hooks():
+    """
+    Install package manager hooks to run sentinel automatically (Requires Root).
+    """
+    install()
 
 if __name__=="__main__":
     app()
