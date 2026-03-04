@@ -71,3 +71,23 @@ def run_preflight_checks():
         is_safe = False
     
     return is_safe
+
+def assess_blaast_radius(package_data: str):
+    """
+    Evaluates the package stream for critical system modifications.
+    Returns (is_scary: bool, risk_category: str
+    """
+
+    # categories for danger so that the user can know why we are taking a snapshot
+    categories = {
+        "Bootchain & Kernel": ["linux-image", "linux-headers", "initramfs", "grub", "shim", "systemd-boot"],
+        "Hardware Drivers": ["dkms", "nvidia", "mesa", "wayland", "xorg", "xserver-xorg"],
+        "Core Daemons & Libs": ["systemd", "libc6", "dbus", "cryptsetup", "libpam"]
+    }
+
+    # Scan the package data for triggers
+    for category, triggers in categories.items():
+        if any (trigger in package_data for trigger in triggers):
+            return True, category
+        
+    return False, "Standard Packages"

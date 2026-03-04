@@ -5,7 +5,8 @@ import select
 
 from sentinel.engine.security import analyze_security_risk
 from sentinel.engine.boot import analyze_boot_health
-from sentinel.engine.system import run_preflight_checks
+from sentinel.engine.system import run_preflight_checks, assess_blaast_radius
+from sentinel.engine.recovery import trigger_snapshot
 from sentinel.hooks import install
 
 console = Console()
@@ -27,12 +28,21 @@ def predict():
     if not run_preflight_checks():
         console.print("\n[bold red]!!!SENTINEL VETO: System health checks failed!!![/bold red]")
         console.print("[white]Aborting installation to prevent system breakage.[/white]")
-        sys.exit(1)  # This LITERALLY stops the APT transaction
+        sys.exit(1)  # This stops the APT transaction
 
-    # 2. The Surgical Probes (These will automatically skip if no danger keywords are found in input_data)
-    analyze_boot_health(input_data)
-    analyze_security_risk(input_data)
+    # 2. The Surgical Probes & Recovery Engine
+    if input_data:
+        analyze_boot_health(input_data)
+        analyze_security_risk(input_data)
 
+        #3. Assess the Blast Radius (The Recovery Engine)
+        is_scary, risk_category = assess_blaast_radius(input_data)
+
+        if is_scary:
+            console.print(f"\n[bold cyan] High-Risk Update Detected: [white]{risk_category}[/white][/bold cyan]")
+            console.print("  [cyan]Engaging Recovery Guardrails...[/cyan]")
+            trigger_snapshot(input_data)
+        
     console.print("\n[bold green]Sentinel Audit Complete. Proceeding with transaction...[/bold green]")
 
 @app.command()
