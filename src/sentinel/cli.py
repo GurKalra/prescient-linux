@@ -3,12 +3,12 @@ from rich.console import Console
 import sys
 import select
 
-from sentinel.engine.security import analyze_security_risk
-from sentinel.engine.boot import analyze_boot_health
-from sentinel.engine.system import run_preflight_checks, assess_blast_radius
-from sentinel.engine.recovery import trigger_snapshot
-from sentinel.engine.diagnose import run_diagnostics
-from sentinel.hooks import install
+from sentinel.core.hooks import install
+from sentinel.vanguard.security import analyze_security_risk
+from sentinel.vanguard.boot import analyze_boot_health
+from sentinel.vanguard.system import run_preflight_checks, assess_blast_radius
+from sentinel.recovery.snapshot import trigger_snapshot
+from sentinel.intelligence.diagnose import run_diagnostics
 
 console = Console()
 app = typer.Typer(help="Sentinel Linux: Predict, Protect, Recover")

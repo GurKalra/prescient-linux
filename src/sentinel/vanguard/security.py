@@ -1,6 +1,6 @@
 import subprocess
 from rich.console import Console
-from sentinel.engine.cache import get_cached_state, set_cached_state
+from sentinel.core.cache import get_cached_state, set_cached_state
 from sentinel.config import CONFIG
 
 console = Console()
