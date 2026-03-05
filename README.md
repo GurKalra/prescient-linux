@@ -117,10 +117,13 @@ This project is actively being built for FOSS Hack 2026.
 - [x] **Phase 2:** The Vanguard Engine (Predict Engine, DKMS Collision Logic, /boot Audits)
 - [x] **Phase 3:** The Recovery Engine (Pre-Transaction Snapshots via Timeshift/BTRFS)
 - [x] **Phase 4:** The Diagnose Engine (Post-Crash `journalctl` Analysis)
-- [ ] **Phase 5:** Extensible Rules Schema (Custom `.toml` triggers for power users)
+- [x] **Phase 5:** Extensible Rules Schema (Custom `.toml` triggers for power users)
 - [ ] **Phase 6:** Atomic Local Rollback (`sentinel undo` via local cache simulation)
-- [ ] **Phase 7:** Initramfs Rescue Hook (Minimal POSIX shell failsafe for broken boots)
-- [ ] **Phase 8:** Interactive TUI Dashboard (Read-only visual system overview)
+- [ ] **Phase 7:** Transparent Auto-Healer (sentinel heal with interactive command proposals).
+- [ ] **Phase 8:** Initramfs Rescue Hook (Minimal POSIX shell failsafe for broken boots)
+- [ ] **Phase 9:** TTY Pastebin Exporter (sentinel diagnose --share via termbin).
+- [ ] **Phase 10:** Network & Mirror Pre-Flight (Checking repo health before APT runs).
+- [ ] **Phase 11:** Interactive TUI Dashboard (Read-only visual system overview)
 
 ---
 
