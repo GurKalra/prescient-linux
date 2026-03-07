@@ -4,6 +4,7 @@ import sys
 import select
 
 from sentinel.core.hooks import install
+from sentinel.core.logger import logger
 from sentinel.vanguard.security import analyze_security_risk
 from sentinel.vanguard.boot import analyze_boot_health
 from sentinel.vanguard.system import run_preflight_checks, assess_blast_radius
@@ -27,6 +28,7 @@ def predict():
 
     # 1. IMMEDIATE HARD STOP (Pre-flight health)
     if not run_preflight_checks():
+        logger.error("VETO: System pre-flight health checks failed. Aborting transaction.")
         console.print("\n[bold red]!!!SENTINEL VETO: System health checks failed!!![/bold red]")
         console.print("[white]Aborting installation to prevent system breakage.[/white]")
         sys.exit(1)  # This stops the APT transaction
@@ -40,10 +42,13 @@ def predict():
         is_scary, risk_category = assess_blast_radius(input_data)
 
         if is_scary:
+            logger.warning(f"High-Risk Update Detected ({risk_category}). Triggering snapshot.")
             console.print(f"\n[bold cyan] High-Risk Update Detected: [white]{risk_category}[/white][/bold cyan]")
             console.print("  [cyan]Engaging Recovery Guardrails...[/cyan]")
             trigger_snapshot(input_data)
-        
+        else:
+            logger.info("No high-risk packages detected in transaction.")
+    logger.info("Audit complete. Proceeding with installation.")    
     console.print("\n[bold green]Sentinel Audit Complete. Proceeding with transaction...[/bold green]")
 
 @app.command()
@@ -51,6 +56,7 @@ def diagnose():
     """
     Analyze system logs from the current boot to identify critical failures.
     """
+    logger.info("User initiated post-crash diagnostics.")
     console.print("\n[bold cyan]~~~ Sentinel Post-Crash Diagnostics ~~~[/bold cyan]")
     run_diagnostics()
 
@@ -59,6 +65,7 @@ def install_hooks():
     """
     Install package manager hooks to run sentinel automatically (Requires Root).
     """
+    logger.info("Installing package manager hooks.")
     install()
 
 @app.command()
@@ -66,6 +73,7 @@ def undo():
     """
     Instantly revert the system to the last Sentinel-created snapshot.
     """
+    logger.info("User requested undo. Feature under construction.")
     console.print("\n[bold yellow]🚧 The 'undo' engine is currently under construction.[/bold yellow]")
     console.print("[white]Soon, this will automatically restore your last Timeshift/Snapper backup.[/white]\n")
 
@@ -74,6 +82,7 @@ def heal():
     """
     Auto-restart crashed user-space services based on recent log diagnostics.
     """
+    logger.info("User requested heal. Feature under construction.")
     console.print("\n[bold yellow]🚧 The 'heal' engine is currently under construction.[/bold yellow]")
     console.print("[white]Soon, this will cross-reference diagnostics and restart broken daemons.[/white]\n")
 
