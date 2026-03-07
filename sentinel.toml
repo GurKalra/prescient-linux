@@ -11,7 +11,8 @@ kernel = [
     "linux-lts", 
     "linux-zen", 
     "initramfs-tools", 
-    "mkinitcpio"
+    "mkinitcpio",
+    "linux-kernel"
 ]
 bootloader = [
     "grub", 

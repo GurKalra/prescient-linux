@@ -1,13 +1,12 @@
 import logging
 import os
-from rich.logging import RichHandler
 
 # Target Defination
 SYSTEM_LOG_FILE = "/var/log/sentinel.log"
 FALLBACK_LOG_FILE = "/tmp/sentinel-user.log"
 
 def _setup_logger() -> logging.Logger:
-    """Configures a dual-handler logger (Rich CLI + Secure File)."""
+    """Configures a secure, background-only file logger."""
 
     # Base logger
     sentinel_logger = logging.getLogger("sentinel_core")
@@ -43,15 +42,6 @@ def _setup_logger() -> logging.Logger:
     
     except PermissionError:
         pass
-
-    # Setup of Rich Console Handler
-    rich_handler = RichHandler(
-        rich_tracebacks=True,
-        show_time=False,
-        show_path=False
-    )
-    rich_handler.setLevel(logging.INFO)
-    sentinel_logger.addHandler(rich_handler)
 
     return sentinel_logger
 
