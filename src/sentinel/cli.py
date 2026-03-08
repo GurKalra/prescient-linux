@@ -7,7 +7,7 @@ from sentinel.core.hooks import install
 from sentinel.core.logger import logger
 from sentinel.vanguard.security import analyze_security_risk
 from sentinel.vanguard.boot import analyze_boot_health
-from sentinel.vanguard.system import run_preflight_checks, assess_blast_radius
+from sentinel.vanguard.system import run_preflight_checks, assess_blast_radius, parse_and_sanitize_packages
 from sentinel.recovery.snapshot import trigger_snapshot
 from sentinel.intelligence.diagnose import run_diagnostics
 
@@ -35,11 +35,14 @@ def predict():
 
     # 2. The Surgical Probes & Recovery Engine
     if input_data:
-        analyze_boot_health(input_data)
-        analyze_security_risk(input_data)
+        # Sanitizing the list first
+        safe_package_list = parse_and_sanitize_packages(input_data)
+
+        analyze_boot_health(safe_package_list)
+        analyze_security_risk(safe_package_list)
 
         #3. Assess the Blast Radius (The Recovery Engine)
-        is_scary, risk_category = assess_blast_radius(input_data)
+        is_scary, risk_category = assess_blast_radius(safe_package_list)
 
         if is_scary:
             logger.warning(f"High-Risk Update Detected ({risk_category}). Triggering snapshot.")
@@ -48,6 +51,7 @@ def predict():
             trigger_snapshot(input_data)
         else:
             logger.info("No high-risk packages detected in transaction.")
+
     logger.info("Audit complete. Proceeding with installation.")    
     console.print("\n[bold green]Sentinel Audit Complete. Proceeding with transaction...[/bold green]")
 

@@ -2,13 +2,15 @@ import subprocess
 from rich.console import Console
 from sentinel.core.cache import get_cached_state, set_cached_state
 from sentinel.config import CONFIG
+from sentinel.core.logger import logger
 
 console = Console()
 
-def get_secure_boot_status():
+def get_secure_boot_status() -> bool:
     """Checks if Secure Boot is enabled, utilizing the RAM cache for speed."""
     cache = get_cached_state() or {}
     if "sb_enabled" in cache:
+        logger.debug("Secure Boot status retrieved from cache.")
         return cache["sb_enabled"]
     
     try:
@@ -21,12 +23,14 @@ def get_secure_boot_status():
         ) 
         is_enabled = "enabled" in res.stdout.lower()
         set_cached_state({"sb_enabled": is_enabled})
+        logger.debug(f"Secure Boot status verified via mokutil: {is_enabled}")
         return is_enabled
     except Exception:
         # If mokutil isn't installed or fails, assume permissive mode
+        logger.warning(f"Failed to check Secure Boot status (assuming permissive): {e}")
         return False
     
-def get_dkms_modules():
+def get_dkms_modules() -> list[str]:
     """Fetches currently installed DKMS modules."""
     try:
         res = subprocess.run(
@@ -36,11 +40,14 @@ def get_dkms_modules():
             timeout=3
         )
         # Returns a list of lines like "nvidia, 535.104.05, 6.8.0-40-generic, x86_64: installed"
-        return res.stdout.strip().splitlines()
+        modules = res.stdout.strip().splitlines()
+        logger.debug(f"Found {len(modules)} active DKMS modules.")
+        return modules
     except Exception:
+        logger.warning(f"Failed to fetch DKMS status: {e}")
         return []
     
-def analyze_security_risk(package_list):
+def analyze_security_risk(safe_package_list: list[str]) -> bool:
     """
     Surgical Trigger: Only wakes up if DKMS, Kernel, or Bootloader are changing.
     """
@@ -51,38 +58,42 @@ def analyze_security_risk(package_list):
     driver_pkgs = triggers.get("high_risk", {}).get("drivers", [])
     
     # Checking packages in the input matches
-    kernel_changing = any(pkg in package_list for pkg in kernel_pkgs)
-    shim_changing = any(pkg in package_list for pkg in boot_pkgs)
-    dkms_changing = any(pkg in package_list for pkg in driver_pkgs)
+    kernel_changing = any(pkg in safe_package_list for pkg in kernel_pkgs)
+    shim_changing = any(pkg in safe_package_list for pkg in boot_pkgs)
+    dkms_changing = any(pkg in safe_package_list for pkg in driver_pkgs)
 
     # THE TRIGGER: Fast-pass if this is a boring update (like 'curl' or 'vlc')
     if not (kernel_changing or dkms_changing or shim_changing):
         return True
 
+    logger.warning(f"Failed to fetch DKMS status: {e}")
     console.print("[bold blue]Sentinel Security & Driver Audit...[/bold blue]")
     
     sb_active = get_secure_boot_status()
     dkms_modules = get_dkms_modules()
     
     if shim_changing:
+        logger.warning("Bootloader/Shim update detected in transaction.")
         console.print("  Bootloader Update: [bold yellow]GRUB/Shim signatures are changing.[/bold yellow]")
 
     if sb_active:
+        logger.info("Secure Boot is ENABLED.")
         console.print(f"  Secure Boot State: [bold green]ENABLED[/bold green]")
         
         # The ultimate collision: Secure Boot is ON, Kernel is updating, and we have DKMS modules.
-        # This means the modules MUST be signed with a MOK key, or they will fail to load.
         if kernel_changing and dkms_modules:
+            logger.error("Collision Risk: Kernel update with active DKMS modules under Secure Boot.")
             console.print("  Driver Collision Risk: [bold red]Unsigned Modules vs. New Kernel[/bold red]")
             for mod in dkms_modules:
-                # Print just the module name, not the whole string
                 mod_name = mod.split(',')[0] if ',' in mod else mod
                 console.print(f"    - Found active DKMS module: [white]{mod_name}[/white]")
             console.print("    [yellow]Action Required:[/yellow] Ensure you have a MOK (Machine Owner Key) enrolled.")
             console.print("    [white]If these modules are not signed during the update, your system may boot to a black screen.[/white]")
     else:
+        logger.info("Secure Boot is DISABLED (Permissive Mode).")
         console.print(f"  Secure Boot State: [bold yellow]DISABLED (Permissive Mode)[/bold yellow]")
         if kernel_changing and dkms_modules:
+            logger.info("DKMS modules will rebuild safely (Secure Boot is off).")
             console.print("    [white]DKMS modules will rebuild automatically for the new kernel. No MOK signing required.[/white]")
 
     return True
