@@ -1,4 +1,4 @@
-# Sentinel Linux
+# Sentinel
 
 > **Predict. Protect. Recover.**
 > An intelligent, CLI-first system guardian that predicts update breakages, protects dependencies, and recovers Linux environments.
