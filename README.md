@@ -28,11 +28,15 @@ Sentinel does not replace your package manager. It performs deterministic pre-fl
 
 - **Universal Pre-Transaction Hooks:** _(Live)_ Native interceptors injected directly into package managers (using `DPkg::Pre-Install-Pkgs` for `apt`, with `pacman` support planned). Sentinel doesn't need to be run manually—it wakes up automatically at the point of no return.
 
-- **Automated Recovery Guardrails:** _(In Development)_ Context-aware integration with `timeshift` and native `btrfs`. Sentinel will only trigger a pre-transaction system snapshot when core boot-chain or critical services are actively threatened, keeping overhead to an absolute minimum.
+- **Autonomous Heuristic Engine:** _(Live)_ Sentinel doesn't just rely on static blacklists. It dynamically queries the package manager to analyze the exact paths an unknown package intends to modify. If a package touches critical tripwires (like `/etc/pam.d` or `/boot`), Sentinel flags it, learns the threat, and saves it to its configuration memory.
+
+- **Automated Recovery Guardrails:** _(Live)_ Context-aware integration with `timeshift` and native `btrfs` (`snapper`). Sentinel will only trigger a pre-transaction system snapshot when core boot-chain or critical services are actively threatened, keeping overhead to an absolute minimum and persisting the state to `/var/lib/sentinel`.
+
+- **Atomic Local Rollbacks (`sentinel undo`):** _(Live)_ Strict, dependency-safe transaction reversals. If an update breaks your system's GUI or networking, drop into a TTY terminal and instantly restore your root filesystem to the exact moment before the crash with an interactive, safety-gated rollback UI.
 
 - **Pattern Interpretation (`sentinel diagnose`):** _(In Development)_ A post-crash logic engine that parses `journalctl -p 3 -b -1` errors. It translates cryptic kernel panics from a failed boot into human-readable English and highly specific, actionable terminal commands.
 
-- **Atomic Local Rollbacks & Rescue:** _(Planned)_ Strict, dependency-safe transaction reversals (`sentinel undo`) using the local `apt` cache, paired with a minimal, POSIX-compliant shell hook injected into `initramfs` for absolute worst-case emergency recovery.
+- **Initramfs Rescue Hook:** _(Planned)_ A minimal, POSIX-compliant shell hook injected into the initramfs boot stage. This allows for absolute worst-case emergency recovery, enabling the user to trigger a Sentinel rollback even if the system fails to reach a login screen or a TTY terminal.
 
 ## The North Stars of Sentinel
 
@@ -104,6 +108,12 @@ sentinel predict
 
 ```bash
 sentinel diagnose
+```
+
+- To safely rollback the system to the last pre-update snapshot (Requires root):
+
+```bash
+sudo sentinel undo
 ```
 
 ---
