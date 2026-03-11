@@ -25,7 +25,7 @@ def get_secure_boot_status() -> bool:
         set_cached_state({"sb_enabled": is_enabled})
         logger.debug(f"Secure Boot status verified via mokutil: {is_enabled}")
         return is_enabled
-    except Exception:
+    except Exception as e:
         # If mokutil isn't installed or fails, assume permissive mode
         logger.warning(f"Failed to check Secure Boot status (assuming permissive): {e}")
         return False
@@ -43,7 +43,7 @@ def get_dkms_modules() -> list[str]:
         modules = res.stdout.strip().splitlines()
         logger.debug(f"Found {len(modules)} active DKMS modules.")
         return modules
-    except Exception:
+    except Exception as e:
         logger.warning(f"Failed to fetch DKMS status: {e}")
         return []
     
@@ -66,7 +66,6 @@ def analyze_security_risk(safe_package_list: list[str]) -> bool:
     if not (kernel_changing or dkms_changing or shim_changing):
         return True
 
-    logger.warning(f"Failed to fetch DKMS status: {e}")
     console.print("[bold blue]Sentinel Security & Driver Audit...[/bold blue]")
     
     sb_active = get_secure_boot_status()

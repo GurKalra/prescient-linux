@@ -33,7 +33,12 @@ def count_installed_kernels() -> int:
         kernels = [f for f in os.listdir("/boot") if f.startswith("vmlinuz")]
         count = len(kernels)
         logger.debug(f"Found {count} installed kernels in /boot.")
+        return count
     except FileNotFoundError:
+        logger.error("/boot directory not found during kernel count.")
+        return 0
+    except Exception as e:
+        logger.error(f"Unexpected error counting kernels: {e}")
         return 0
 
 def analyze_boot_health(safe_package_list: list[str]) -> bool:
