@@ -1,3 +1,6 @@
+import os
+import re
+import shlex
 import subprocess
 import typer
 from rich.console import Console
@@ -19,9 +22,13 @@ HEAL_PLAYBOOK = {
 def determine_fixes(culprits: list) -> list[tuple[str, list[str]]]:
     """Analyzes the culprits and builds a list of specific bash commands to run."""
     proposed_fixes = []
+    seen_identifiers = set()
 
     # Only looking at the top 3 worst offenders
     for identifier, data in culprits[:3]:
+        if identifier in seen_identifiers:
+            continue
+        seen_identifiers.add(identifier)
         msg = str(data["latest_msg"]).lower()
 
         # Checking for specific string matched in error message
@@ -42,6 +49,7 @@ def determine_fixes(culprits: list) -> list[tuple[str, list[str]]]:
         # If the failing service is directly in the "HEAL_PLAYBOOK"
         if identifier in HEAL_PLAYBOOK:
             proposed_fixes.append((f"{identifier} Crash", HEAL_PLAYBOOK[identifier]))
+            continue
         
         # If systemd is complaning , search through the actual message
         if identifier.lower() == "systemd":
@@ -56,12 +64,21 @@ def determine_fixes(culprits: list) -> list[tuple[str, list[str]]]:
         
         # For genral fallback, propose a general restart
         if identifier.lower() not in ["kernel", "systemd", "unknown subsystem"]:
+            safe_id = re.sub(r'[^a-zA-Z0-9\-_\.]', '', identifier)
             proposed_fixes.append((f"{identifier} Service Failure", [f"systemctl restart {identifier}"]))
         
     return proposed_fixes
 
 def run_autoheal_sequence(culprits: list):
     """The interactive CLI sequence that proposes commands and executes them."""
+    
+    # Enforce root privilages before doing anything
+    if os.geteuid() != 0:
+        logger.error("Autoheal aborted: Root privileges required.")
+        console.print("\n[bold red]Error: Auto-Heal requires root privileges to restart services.[/bold red]")
+        console.print("Try running: [bold yellow]sudo sentinel heal[/bold yellow]\n")
+        return
+    
     if not culprits:
         logger.info("Autoheal bypassed: No culprits provided by diagnostics.")
         return
@@ -100,7 +117,7 @@ def run_autoheal_sequence(culprits: list):
             try:
                 logger.debug(f"Autoheal executing: {cmd}")
                 subprocess.run(
-                    cmd, 
+                    shlex.split(cmd), 
                     shell=True,
                     check=True,
                     capture_output=True,
