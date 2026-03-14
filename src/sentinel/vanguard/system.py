@@ -12,20 +12,34 @@ console = Console()
 def parse_and_sanitize_packages(raw_input: str) -> list[str]:
     """
     Parses raw stdin from the package manager and neutralizes shell injection threats.
+    Extracts the exact package names from APT cache paths
     Returns a clean list of safe package names.
     """
     clean_packages = []
-    raw_packages = raw_input.strip().split()
+    lines = raw_input.strip().split()
     safe_pattern = re.compile(r"^[a-zA-Z0-9\-_\.\+]+$")
 
-    for pkg in raw_packages:
-        if not pkg.strip():
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("VERSION"):
             continue
-        if safe_pattern.match(pkg):
-            clean_packages.append(shlex.quote(pkg))
-        else:
-            logger.warning(f"SECURITY THREAT: Dropped malformed/malicious package input: '{pkg}'")
 
+        # Extract filename from path
+        basename = line.split('/')[-1]
+
+        # Extract actual package name
+        if basename.endswith(".deb"):
+            pkg_name = basename.split('_')[0]
+        else:
+            pkg_name = basename
+
+        # Apply strict shell-injection guards to the isolated name
+        if safe_pattern.match(pkg_name):
+            safe_pkg = shlex.quote(pkg_name)
+            clean_packages.append(safe_pkg)
+        else:
+            logger.warning(f"SECURITY THREAT: Dropped malformed/malicious package input: '{pkg_name}'")
+        
     return clean_packages
 
 def check_root_space(min_gb=2.0) -> tuple[bool, float]:
@@ -112,14 +126,16 @@ def assess_blast_radius(safe_package_list: list[str]) -> tuple[bool, str]:
 
     # Checking high risk packages
     for category, packages in high_risk_triggers.items():
-        for pkg in packages:
-            if shlex.quote(pkg) in safe_package_list:
+        for trigger in packages:
+            safe_trigger = shlex.quote(trigger)
+            if any(safe_trigger in pkg for pkg in safe_package_list):
                 return True, f"Critical System Component ({category.capitalize()})"
 
     # Checking for medium risk
     for category, packages in medium_risk_triggers.items():
-        for pkg in packages:
-            if shlex.quote(pkg) in safe_package_list:                                                
+        for trigger in packages:
+            safe_trigger = shlex.quote(trigger)
+            if any(safe_trigger in pkg for pkg in safe_package_list):                                                
                 return True, f"Core Subsystem ({category.replace('_', ' ').title()})"
     
     logger.info("Packages not found in static config. Deferring to Heuristic Engine.")
