@@ -38,9 +38,8 @@ def predict():
     input_data = ""
 
     #if nothing arrives, sentinel will not freeze. It will keep going
-    ready, _, _ = select.select([sys.stdin], [], [], 0.1)
-    if ready:
-        input_data = sys.stdin.read() 
+    if not sys.stdin.isatty():
+        input_data = sys.stdin.read()
 
     # 1. IMMEDIATE HARD STOP (Pre-flight health)
     if not run_preflight_checks():
