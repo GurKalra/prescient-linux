@@ -8,6 +8,9 @@ CACHE_TTL_SECONDS = 1800
 
 def get_cached_state():
     """Retrives the cached state if it's still fresh."""
+    if not CACHE_FILE.exists():
+        return {}
+
     if CACHE_FILE.exists():
         try:
             # Only trust if the cache is not expired

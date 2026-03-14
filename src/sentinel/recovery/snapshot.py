@@ -152,7 +152,7 @@ def trigger_snapshot(package_data: str, trigger_reason: str = "Unknown Safety Tr
         except subprocess.TimeoutExpired as e:
             logger.error(f"CRITICAL: {provider.capitalize()} hung and timed out after 120s!")
             console.print(f"  [bold red] Snapshot Timed Out![/bold red]")
-            console.print("  [white]The backup tool stopped responding. Proceeding with update to prevent system lock.[/white]")
+            console.print("  [white]The backup tool stopped responding. Proceeding to prevent system lock.[/white]")
             return False
         
         except subprocess.CalledProcessError as e:
