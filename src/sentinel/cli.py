@@ -12,6 +12,7 @@ from sentinel.vanguard.boot import analyze_boot_health
 from sentinel.vanguard.system import run_preflight_checks, assess_blast_radius, parse_and_sanitize_packages
 from sentinel.recovery.snapshot import trigger_snapshot
 from sentinel.intelligence.diagnose import run_diagnostics
+from sentinel.intelligence.autoheal import run_autoheal_sequence
 from sentinel.recovery.undo import get_last_snapshot, verify_snapshot, execute_rollback
 
 console = Console()
@@ -29,6 +30,14 @@ def _format_relative_time(timestamp: float) -> str:
     elif diff < 86400:
         return f"{int(diff // 3600)} hours ago" 
     return f"{int(diff // 86400)} days ago"
+
+@app.command()
+def install_hooks():
+    """
+    Install package manager hooks to run sentinel automatically (Requires Root).
+    """
+    logger.info("Installing package manager hooks.")
+    install()
 
 @app.command()
 def predict():
@@ -79,13 +88,6 @@ def diagnose():
     console.print("\n[bold cyan]~~~ Sentinel Post-Crash Diagnostics ~~~[/bold cyan]")
     run_diagnostics()
 
-@app.command()
-def install_hooks():
-    """
-    Install package manager hooks to run sentinel automatically (Requires Root).
-    """
-    logger.info("Installing package manager hooks.")
-    install()
 
 @app.command()
 def undo():
@@ -154,11 +156,13 @@ def undo():
 @app.command()
 def heal():
     """
-    Auto-restart crashed user-space services based on recent log diagnostics.
+    Transparently propose and execute fixes for crashed services based on log diagnostics.
     """
     logger.info("User requested heal. Feature under construction.")
-    console.print("\n[bold yellow]🚧 The 'heal' engine is currently under construction.[/bold yellow]")
-    console.print("[white]Soon, this will cross-reference diagnostics and restart broken daemons.[/white]\n")
+    console.print("\n[bold cyan]~~~ Sentinel Diagnostics & Auto-Heal ~~~[/bold cyan]")
+
+    culprits = run_diagnostics()
+    run_autoheal_sequence(culprits)
 
 if __name__=="__main__":
     app()

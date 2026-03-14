@@ -2,15 +2,17 @@ import subprocess
 import json
 from rich.console import Console
 from rich.table import Table
+from sentinel.core.logger import logger
 
 console = Console()
 
-def get_structured_logs():
+def get_structured_logs() -> list:
     """
     Fetches high-priority errors from the current boot as structured JSON.
     Priority 3 = Errors, 2 = Critical, 1 = Alerts, 0 = Emergencies.
     """
     try:
+        logger.debug("Executing journalctl to fetch structured logs.")
         cmd = ["journalctl", "-p", "3", "-b", "-o", "json"]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
@@ -24,18 +26,25 @@ def get_structured_logs():
                 continue
         return logs
     except subprocess.CalledProcessError:
+        logger.error(f"Failed to read system journals: {e}")
         console.print("[yellow] Unable to read system journals. Are you running as root?[/yellow]")
         return []
     except FileNotFoundError:
+        logger.error("journalctl command not found on host.")
         console.print("[bold red]!!! journalctl command not found. Is systemd installed?[/bold red]")
         return []
     
-def run_diagnostics():
-    """Dynamically analyzes logs to find the root cause of system instability."""
+def run_diagnostics() -> list:
+    """
+    Dynamically analyzes logs to find the root cause of system instability
+    Also provides the sorted list for autoheal engine
+    """
+    logger.info("Starting diagnostic scan of current boot logs.")
     with console.status("[bold cyan] Sentinel is dynamically analyzing current boot logs...[/bold cyan]", spinner="bouncingBar"):
         logs = get_structured_logs()
 
     if not logs:
+        logger.info("Diagnostic scan clean. No critical errors found.")
         console.print("[bold green] No critical errors found in the current boot log![/bold green]")
         return
     
@@ -56,6 +65,8 @@ def run_diagnostics():
     
     # Sorting culprits by no of errors they throw
     sorted_culprits = sorted(culprits.items(), key=lambda item: item[1]["count"], reverse=True)
+
+    logger.warning(f"System instability detected: {len(logs)} total errors across {len(sorted_culprits)} subsystems.")
     console.print(f"\n[bold red]!!!!! System Instability Detected ({len(logs)} total errors)[/bold red]")
 
     table = Table(show_header=True, header_style="bold magenta")
@@ -74,3 +85,4 @@ def run_diagnostics():
     console.print("\n[bold cyan] Tip: If you are stuck in a TTY, identify the failing subsystem above.[/bold cyan]")
     console.print("[bold cyan]   If an update caused this, run your Timeshift/Snapper restore command.[/bold cyan]\n")
 
+    return sorted_culprits
