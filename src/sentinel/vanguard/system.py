@@ -1,4 +1,5 @@
 import shutil
+import os
 import subprocess
 import shlex
 import re
@@ -101,6 +102,9 @@ def run_preflight_checks() -> bool:
     logger.info("Initiating pre-flight system health audit.")
     is_safe = True
 
+    sudo_cmd = os.environ.get("SUDO_COMMAND", "").lower()
+    is_removal = "remove" in sudo_cmd or "purge" in sudo_cmd or "autoremove" in sudo_cmd
+
     #1. DPKG Health Check
     dpkg_ok, dpkg_log = check_dpkg_health()
     if(dpkg_ok):
@@ -117,10 +121,16 @@ def run_preflight_checks() -> bool:
     if space_ok:
         console.print(f" Root Partition Space: [bold green]{free_gb:.2f} GB free[/bold green]")
     else:
-        logger.error(f"Pre-flight VETO: Root partition critically low on space ({free_gb:.2f} GB free).")
-        console.print(f" Root Partition Space: [bold red]{free_gb:.2f} GB free[/bold red] (Minimum required: 2.0 GB)")
-        console.print("    [white]Running an update with low disk space can corrupt your system. Please free up space.[/white]")
-        is_safe = False
+        if is_removal:
+            logger.warning(f"Root partition critically low on space ({free_gb:.2f} GB free), but permitting removal.")
+            console.print(f" Root Partition Space: [bold yellow]{free_gb:.2f} GB free[/bold yellow] (Minimum required: 2.0 GB)")
+            console.print("    [bold green]Removal detected. Bypassing space limit to allow disk cleanup.[/bold green]")
+        else:
+            logger.error(f"Pre-flight VETO: Root partition critically low on space ({free_gb:.2f} GB free).")
+            console.print(f" Root Partition Space: [bold red]{free_gb:.2f} GB free[/bold red] (Minimum required: 2.0 GB)")
+            console.print("    [white]Running an update with low disk space can corrupt your system. Please free up space.[/white]")
+            is_safe = False
+
     if is_safe:
         logger.info("Pre-flight audit passed successfully.")
 
