@@ -3,7 +3,7 @@
 > **Predict. Protect. Recover.**
 > An intelligent, CLI-first system guardian that predicts update breakages, protects dependencies, and recovers Linux environments.
 
-![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
+![Python Version](https://img.shields.io/badge/python-3.11+%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-Active_Development-orange)
 ![FOSS Hack 2026](https://img.shields.io/badge/FOSS_Hack-2026-purple)
@@ -53,31 +53,10 @@ Sentinel Linux is built on four uncompromising principles:
 
 Sentinel is built entirely on native open-source binaries with zero proprietary APIs.
 
-**1. Clone the repository**
+Run this single command to securely deploy Sentinel to your system:
 
 ```bash
-git clone https://github.com/GurKalra/sentinel-linux.git
-cd sentinel-linux
-```
-
-**\*for ssh**
-
-```bash
-git clone git@github.com:GurKalra/sentinel-linux.git
-cd sentinel-linux
-```
-
-**2. Create a virtual enviroment**
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-**3. Install the CLI locally.**
-
-```bash
-pip install -e .
+curl -sSL https://raw.githubusercontent.com/GurKalra/sentinel-linux/main/install.sh | bash
 ```
 
 ---
@@ -116,6 +95,12 @@ sentinel diagnose
 sudo sentinel undo
 ```
 
+- To transparently auto-recover crashed services based on log diagnostics (Requires root):
+
+```bash
+sudo sentinel heal
+```
+
 ---
 
 ## FOSSHack 2026 Roadmap
@@ -142,3 +127,7 @@ This project is actively being built for FOSS Hack 2026.
 This project is open-source and available under the **MIT License**. You are free to copy, modify, and distribute this software, as long as the original copyright and license notice are included.
 
 See the [LICENSE](LICENSE) file for more details.
+
+```
+
+```
