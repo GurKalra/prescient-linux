@@ -117,8 +117,7 @@ def run_autoheal_sequence(culprits: list):
             try:
                 logger.debug(f"Autoheal executing: {cmd}")
                 subprocess.run(
-                    shlex.split(cmd), 
-                    shell=True,
+                    shlex.split(cmd),
                     check=True,
                     capture_output=True,
                     text=True
