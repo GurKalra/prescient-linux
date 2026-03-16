@@ -56,12 +56,15 @@ def analyze_security_risk(safe_package_list: list[str]) -> bool:
     kernel_pkgs = triggers.get("high_risk", {}).get("kernel", [])
     boot_pkgs = triggers.get("high_risk", {}).get("bootloader", [])
     driver_pkgs = triggers.get("medium_risk", {}).get("drivers", [])
+
+    def is_match(pkg, trigger):
+        return pkg == trigger or pkg.startswith(trigger + "-")
     
     # Checking packages in the input matches
-    kernel_changing = any(trigger in pkg for pkg in safe_package_list for trigger in kernel_pkgs)
-    shim_changing = any(trigger in pkg for pkg in safe_package_list for trigger in boot_pkgs)
-    dkms_changing = any(trigger in pkg for pkg in safe_package_list for trigger in driver_pkgs)
-
+    kernel_changing = any(is_match(pkg, trigger) for pkg in safe_package_list for trigger in kernel_pkgs)
+    shim_changing = any(is_match(pkg, trigger) for pkg in safe_package_list for trigger in boot_pkgs)
+    dkms_changing = any(is_match(pkg, trigger) for pkg in safe_package_list for trigger in driver_pkgs)
+    
     # THE TRIGGER: Fast-pass if this is a boring update (like 'curl' or 'vlc')
     if not (kernel_changing or dkms_changing or shim_changing):
         return True

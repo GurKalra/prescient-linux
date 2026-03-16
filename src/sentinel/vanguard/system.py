@@ -144,18 +144,19 @@ def assess_blast_radius(safe_package_list: list[str]) -> tuple[bool, str]:
     high_risk_triggers = CONFIG.get("triggers", {}).get("high_risk", {})
     medium_risk_triggers = CONFIG.get("triggers", {}).get("medium_risk", {})
 
+    def is_match(pkg, trigger):
+        return pkg == trigger or pkg.startswith(trigger + "-")
+
     # Checking high risk packages
     for category, packages in high_risk_triggers.items():
         for trigger in packages:
-            safe_trigger = shlex.quote(trigger)
-            if any(safe_trigger in pkg for pkg in safe_package_list):
+            if any(is_match(pkg, trigger) for pkg in safe_package_list):
                 return True, f"Critical System Component ({category.capitalize()})"
 
     # Checking for medium risk
     for category, packages in medium_risk_triggers.items():
         for trigger in packages:
-            safe_trigger = shlex.quote(trigger)
-            if any(safe_trigger in pkg for pkg in safe_package_list):                                                
+            if any(is_match(pkg, trigger) for pkg in safe_package_list):                                                
                 return True, f"Core Subsystem ({category.replace('_', ' ').title()})"
     
     logger.info("Packages not found in static config. Deferring to Heuristic Engine.")

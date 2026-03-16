@@ -56,8 +56,7 @@ def analyze_boot_health(safe_package_list: list[str]) -> bool:
     # Skip if it is a normal app update
     is_boot_update = False
     for trigger in boot_triggers:
-        safe_trigger = shlex.quote(trigger)
-        if any(safe_trigger in pkg for pkg in safe_package_list):
+        if any(pkg == trigger or pkg.startswith(trigger + "-") for pkg in safe_package_list):
             is_boot_update = True
             break
         
