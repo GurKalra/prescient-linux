@@ -3,7 +3,7 @@
 > **Predict. Protect. Recover.**
 > An intelligent, CLI-first system guardian that predicts update breakages, protects dependencies, and recovers Linux environments.
 
-![Python Version](https://img.shields.io/badge/python-3.11+%2B-blue)
+![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-Active_Development-orange)
 ![FOSS Hack 2026](https://img.shields.io/badge/FOSS_Hack-2026-purple)
