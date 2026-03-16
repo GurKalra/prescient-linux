@@ -103,6 +103,36 @@ def scan_transaction_heuristics(safe_package_list: list[str]) -> tuple[bool, str
     
     logger.info(f"Initiating deep heuristic scan on {len(safe_package_list)} packages...")
 
+    pm = detect_package_manager()
+    if pm:
+        batch_cmd = ["dpkg", "-L"] + safe_package_list if pm == "apt" else ["pacman", "-Ql"] + safe_package_list
+        try:
+            logger.debug("Running batched heuristic pre-scan...")
+            res = subprocess.run(
+                batch_cmd, 
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            threat_detected = False
+            for tripwire in CRITICAL_PATHS:
+                norm_tripwire = os.path.normpath(tripwire)
+                if norm_tripwire in res.stdout:
+                    threat_detected = True
+                    break
+            
+            # If the batched output is clean, we exit
+            if not threat_detected:
+                logger.info("Batched heuristic pre-scan clean. 0 threats found.")
+                return False, "Standard Package Update"
+                
+            logger.info("Threat detected in batched scan. Falling back to isolation loop...")
+        except subprocess.TimeoutExpired:
+            logger.warning("Batched scan timed out. Falling back to isolation loop...")
+        except Exception as e:
+            logger.warning(f"Batched scan failed ({e}). Falling back to isolation loop...")
+
     findings = []
 
     for pkg in safe_package_list:
