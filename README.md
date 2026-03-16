@@ -129,7 +129,3 @@ This project is actively being built for FOSS Hack 2026.
 This project is open-source and available under the **MIT License**. You are free to copy, modify, and distribute this software, as long as the original copyright and license notice are included.
 
 See the [LICENSE](LICENSE) file for more details.
-
-```
-
-```
