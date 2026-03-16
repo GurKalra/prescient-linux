@@ -14,7 +14,7 @@ def check_boot_space(min_mb: int = 500) -> tuple[bool, float]:
     try:
         usage = shutil.disk_usage("/boot")
         free_mb = usage.free / (1024 * 1024)
-        is_healthy = free_mb >= min_mb, free_mb
+        is_healthy = free_mb >= min_mb
 
         if not is_healthy:
             logger.warning(f"/boot partition space critically low: {free_mb:.0f} MB free.")
