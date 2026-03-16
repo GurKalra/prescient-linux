@@ -56,6 +56,7 @@ def save_snapshot_state(provider: str, snap_id_or_name: str, reason: str):
     """
     try:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
+        STATE_DIR.chmod(0o700)
 
         state = {
             "provider": provider,
