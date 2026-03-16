@@ -36,7 +36,7 @@ Sentinel does not replace your package manager. It performs deterministic pre-fl
 
 - **Pattern Interpretation (`sentinel diagnose`):** _(Live)_ A post-crash logic engine that parses `journalctl -p 3 -b -1` errors. It translates cryptic kernel panics from a failed boot into human-readable English and highly specific, actionable terminal commands.
 
-- **Transparent Auto-Healer (`sentinel heal`):** _(Live)_ An interactive execution engine that maps critical `journalctl` failures to known remediation playbooks. It transparently proposes exact bash fixes for crashed services and waits for user confirmation before safely executing them.
+- **Transparent Auto-Healer (`sentinel heal`):** _(Live)_ An interactive execution engine that maps critical `journalctl` failures to known the remediation playbooks. It transparently proposes exact bash fixes for crashed services and waits for user confirmation before safely executing them.
 
 - **Initramfs Rescue Hook:** _(Planned)_ A minimal, POSIX-compliant shell hook injected into the initramfs boot stage. This allows for absolute worst-case emergency recovery, enabling the user to trigger a Sentinel rollback even if the system fails to reach a login screen or a TTY terminal.
 
