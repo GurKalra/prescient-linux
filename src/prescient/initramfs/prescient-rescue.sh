@@ -35,7 +35,7 @@ if [ ! -d "/root/etc" ]; then
         umount /mnt >/dev/null 2>&1
 
         # BTRFS subvolumes
-        mount -o ro, subvol=@ "$part" /mnt >/dev/null 2>&1
+        mount -o ro,subvol=@ "$part" /mnt >/dev/null 2>&1
         if [ -f "/mnt/etc/os-release" ]; then
             echo "[+] Found BTRFS Root Subvolume at $part"
             umount /mnt
@@ -58,9 +58,28 @@ if [ -d "/root/etc" ];then
     mount -t devpts devpts /root/dev/pts
     mount -t tmpfs tmpfs /root/tmp
 
+    # Timeshift filesystem reading
+    TIMESHIFT_CONFIG="/root/etc/timeshift/timeshift.json"
+    if [ -f "$TIMESHIFT_CONFIG" ]; then
+        echo "[*] Timeshift config found. Ensuring snapshot partition is accessible..."
+        mkdir -p /root/run/timeshift/backup
+        if [ -d "/root/timeshift/snapshots" ]; then
+            echo "[+] Timeshift snapshots found on root partition."
+        fi
+    fi
+
+    # Snapper filesystem reading
+    if [ -d "root/.snapshots" ]; then
+        echo "[*] Snapper directory detected. Checking BTRFS subvolumes..."
+        ROOT_DEV=$(awk '$2 == "/root" {print $1}' /proc/mounts)
+        if [ -n "$ROOT_DEV" ]; then
+            mount -o subvol=@snapshots "$ROOT_DEV" /root/.snapshots >/dev/null 2>&1
+            echo "[+] Snapper BTRFS subvolume linked."
+        fi
+    fi
 
     echo "[+] Prescient Rollback Engine..."
-    chroot /root /bin/bash -c "prescient undo"
+    chroot /root /bin/bash -c "export PATH=/usr/local/bin:/usr/bin:/bin:\$PATH && prescient undo"
 
     echo "=========================================="
     echo "If the rollback was successful, type 'exit'."

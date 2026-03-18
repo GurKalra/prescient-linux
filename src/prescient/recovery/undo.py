@@ -22,56 +22,60 @@ def get_last_snapshot() -> dict | None:
 
 def get_latest_system_snapshot() -> dict | None:
     """
-    Scans the system for the most recent Timeshift or Snapper snapshot if prescient's JSON is missing/not existing
+    In rescue context, reads Timeshift/Snapper directories directly instead of 
+    calling their CLIs (which need D-Bus/systemd and fail in chroot). 
     """
-    # Timeshift checking
-    if shutil.which("timeshift"):
+    # Timeshift filesystem scan
+    timeshift_config_path = Path("/etc/timeshift/timeshift.json")
+    if timeshift_config_path.exists():
         try:
-            res = subprocess.run(
-                ["timeshift", "--list"],
-                capture_output=True,
-                text=True
-            )
-            matches = re.findall(r"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})", res.stdout)
-            if matches:
-                snap_name = matches[-1]
+            snapshot_dirs = [
+                Path("/run/timeshift/backup/timeshift/snapshots"),
+                Path("/timeshift/snapshots"),
+            ]
 
-                # Converting the timeshift format to real timestamp
-                try:
-                    dt = datetime.strptime(snap_name, "%Y-%m-%d_%H-%M-%S")
-                    real_time = dt.timestamp()
-                except ValueError:
-                    real_time = 0.0
-
-                return{
-                    "provider": "timeshift",
-                    "snapshot_name": snap_name, 
-                    "created_at": real_time,
-                    "trigger_reason": "Manual/System Snapshot (Non-Prescient)"
-                }
+            for snap_dir in snapshot_dirs:
+                if snap_dir.exists():
+                    snaps = sorted([d for d in snap_dir.iterdir() if d.is_dir()])
+                    if snaps:
+                        latest = snaps[-1].name
+                        try:
+                            from datetime import datetime
+                            dt = datetime.strptime(latest, "%Y-%m-%d_%H-%M-%S")
+                            ts = dt.timestamp()
+                        except ValueError:
+                            ts = 0.0
+                        
+                        logger.info(f"Found Timeshift snapshot via filesystem scan: {latest}")
+                        return {
+                            "provider": "timeshift",
+                            "snapshot_name": latest,
+                            "created_at": ts,
+                            "trigger_reason": "Rescue Scan (Filesystem Direct)"
+                        }
         except Exception as e:
-            logger.error(f"Failed to list timeshift snapshots: {e}")
-    
-    # Snapper checking
-    if shutil.which("snapper"):
+                logger.error(f"Failed to scan Timeshift snapshots directly: {e}")
+
+    # Snapper filesystem scan
+    snapper_dir = Path("/.snapshots")
+    if snapper_dir.exists():
         try:
-            res = subprocess.run(
-                ["snapper", "list"],
-                capture_output=True,
-                text=True
-            )
-            lines = [line.strip() for line in res.stdout.splitline() if line.strip() and line.strip()[0].isdigit()]
-            if lines:
-                last_id = lines[-1].split()[0]
-                return{
+            snap_ids = sorted([
+                int(d.name) for d in snapper_dir.iterdir()
+                if d.is_dir() and d.name.isdigit()
+            ])
+            if snap_ids:
+                last_id = str(snap_ids[-1])
+                logger.info(f"Found Snapper snapshot via filesystem scan: {last_id}")
+                return {
                     "provider": "snapper",
                     "snapshot_name": last_id,
                     "created_at": 0.0,
-                    "trigger_reason": "Manual/System Snapshot (Non-Prescient)"
+                    "trigger_reason": "Rescue Scan (Filesystem Direct)"
                 }
         except Exception as e:
-            logger.error(f"Failed to list snapper snapshots: {e}")
-    
+            logger.error(f"Failed to scan Snapper snapshots: {e}")
+        
     return None
     
 def verify_snapshot(state: dict) -> bool:
