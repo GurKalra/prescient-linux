@@ -7,6 +7,7 @@ echo "=========================================="
 # Cleanup trap to prevent lockups
 cleanup() {
     echo  "[*] Cleaning up virtual mounts..."
+    umount /root/run/timeshift/backup 2>/dev/null
     umount /root/dev/pts 2>/dev/null
     umount /root/dev     2>/dev/null
     umount /root/run     2>/dev/null
@@ -63,8 +64,19 @@ if [ -d "/root/etc" ];then
     if [ -f "$TIMESHIFT_CONFIG" ]; then
         echo "[*] Timeshift config found. Ensuring snapshot partition is accessible..."
         mkdir -p /root/run/timeshift/backup
-        if [ -d "/root/timeshift/snapshots" ]; then
-            echo "[+] Timeshift snapshots found on root partition."
+
+        BACKUP_UUID=$(awk -F'"' '/backup_device_uuid/ {print $4}' "$TIMESHIFT_CONFIG")
+
+        if [ -n "$BACKUP_UUID" ]; then
+            echo "[*] Target UUID: $BACKUP_UUID"
+            BACKUP_DEV=$(blkid -U "$BACKUP_UUID" 2>/dev/null)
+
+            if [ -n "$BACKUP_DEV" ]; then
+                echo "[+] Mounting $BACKUP_DEV for Timeshift..."
+                mount "$BACKUP_DEV" /root/run/timeshift/backup
+            else
+                echo "[-] Warning: blkid could not find device for UUID $BACKUP_UUID"
+            fi
         fi
     fi
 
