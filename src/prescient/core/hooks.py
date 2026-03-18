@@ -68,13 +68,14 @@ Target = *
 Description = prescient Linux: Analyzing blast radius...
 When = PreTransaction
 Exec = {prescient_bin} predict
+NeedsTargets
 AbortOnFail
 """
     try:
         hook_path.write_text(hook_content)
         logger.info(f"Pacman hook successfully installed at {hook_path}")
         console.print(f"[bold green]prescient Pacman hook installed successfully at {hook_path}[/bold green]")
-        console.print("[dim]Hook wired to executable: {prescient_bin}[/dim]")
+        console.print(f"[dim]Hook wired to executable: {prescient_bin}[/dim]")
     except Exception as e:
         logger.error(f"Failed to write Pacman hook to {hook_path}: {e}")
         console.print(f"[bold red]Failed to write Pacman hook: {e}!!!![/bold red]")
