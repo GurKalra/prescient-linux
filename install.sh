@@ -57,4 +57,4 @@ echo "  sudo prescient predict        # Manual risk scan"
 echo "  sudo prescient diagnose       # Post-crash analysis"
 echo "  sudo prescient heal           # Transparent auto-recovery"
 echo "  sudo prescient undo           # Roll back last update"
-echo "  sudo prescient uninstall      # Complete system purge
+echo "  sudo prescient uninstall      # Complete system purge"
