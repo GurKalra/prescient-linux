@@ -13,7 +13,7 @@ console = Console()
 def parse_and_sanitize_packages(raw_input: str) -> list[str]:
     """
     Parses raw stdin from the package manager and neutralizes shell injection threats.
-    Extracts the exact package names from APT cache paths
+    Extracts the exact package names from APT/Pacman cache paths
     Returns a clean list of safe package names.
     """
     clean_packages = []
@@ -67,38 +67,40 @@ def check_root_space(min_gb=2.0) -> tuple[bool, float]:
         console.print(f"[dim yellow]Warning: Could not read root disk space ({e})[/dim yellow]")
         return True, 0.0
 
-def check_dpkg_health() -> tuple[bool, str]:
+def check_pm_health() -> tuple[bool, str]:
     """
-    Runs 'dpkg --audit' to check for half-installed or broken packages.
-    Returns (is_healthy, audit_output).
+    Universally checks package manager health.
     """
-    try:
-        result = subprocess.run(
-            ['dpkg', '--audit'],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        output = result.stdout.strip()
-        # If output is completely empty, dpkg is perfectly healthy
-        if not output:
-            return True, ""
+    # APT/DPKG Check
+    if shutil.which('dpkg'):
+        try:
+            result = subprocess.run(
+                ['dpkg', '--audit'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            output = result.stdout.strip()
+            if not output:
+                return True, ""
+            return False, output
+        except subprocess.TimeoutExpired:
+            return False, "dpkg --audit times out. dpkg might be locked."
         
-        return False, output
-    except FileNotFoundError:
-        logger.error("Health Check Failed: 'dpkg' command not found.")
-        console.print("[dim red]Error: 'dpkg' command not found.[/dim red]")
-        return False, "dpkg not found"
-    except subprocess.TimeoutExpired:
-        logger.error("Health Check Failed: 'dpkg --audit' timed out.")
-        return False, "dpkg --audit timed out. dpkg might be locked."
+    # Pacman Check
+    elif shutil.which('pacman'):
+        if os.path.exists("/var/lib/pacman/db.lck"):
+            return False, "Pacman database is locked (/var/lib/pacman/db.lck). A previous crash may have occurred."
+        return True, ""
+    
+    return False, "No supported package manager (apt/pacman) found on system."
     
 def run_preflight_checks() -> bool:
     """
     Executes all system-level health checks.
     Returns True if safe to proceed, False if a Hard-Stop is required.
     """
-    console.print("[bold cyan]~~~prescient Pre-Flight Audit...~~~[/bold cyan]")
+    console.print("[bold cyan]~~~Prescient Pre-Flight Audit...~~~[/bold cyan]")
     logger.info("Initiating pre-flight system health audit.")
     is_safe = True
 
@@ -106,14 +108,14 @@ def run_preflight_checks() -> bool:
     is_removal = "remove" in sudo_cmd or "purge" in sudo_cmd or "autoremove" in sudo_cmd
 
     #1. DPKG Health Check
-    dpkg_ok, dpkg_log = check_dpkg_health()
-    if(dpkg_ok):
+    pm_ok, pm_log = check_pm_health()
+    if pm_ok:
         console.print("  Package Manager State: [bold green]Healthy[/bold green]")
     else:
-        logger.error(f"Pre-flight VETO: Package manager is broken. Reason: {dpkg_log.splitlines()[0] if dpkg_log else 'Unknown'}")
+        logger.error(f"Pre-flight VETO: Package manager is broken. Reason: {pm_log.splitlines()[0] if pm_log else 'Unknown'}")
         console.print("  Package Manager State: [bold red]BROKEN[/bold red]")
-        console.print(f"    [yellow]Reason:[/yellow] {dpkg_log.splitlines()[0] if dpkg_log else 'Unknown error'}")
-        console.print("    [white]Run 'sudo apt install -f' to fix broken dependencies before updating.[/white]")
+        console.print(f"    [yellow]Reason:[/yellow] {pm_log.splitlines()[0] if pm_log else 'Unknown error'}")
+        console.print("    [white]Please fix broken dependencies or remove stale lockfiles before updating.[/white]")
         is_safe = False
 
     #2. Root Disk Space Check

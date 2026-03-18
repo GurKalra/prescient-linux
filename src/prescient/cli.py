@@ -203,6 +203,10 @@ def uninstall():
     # Defining the purge targets
     targets = {
         "APT Hook": "/etc/apt/apt.conf.d/99prescient-guardian",
+        "Pacman Hook": "/etc/pacman.d/hooks/99-prescient.hook",
+        "Initramfs Hook": "/etc/initramfs-tools/hooks/prescient-hook",
+        "Mkinitcpio Hook": "/etc/initcpio/install/prescient-hook",
+        "Rescue Binary": "/usr/local/bin/prescient-rescue",
         "System Configs": "/etc/prescient",
         "Logs Data": "/var/log/prescient.log",
         "State Directory": "/var/lib/prescient",
