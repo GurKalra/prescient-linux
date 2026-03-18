@@ -1,5 +1,7 @@
 import subprocess
 import json
+import re
+import shutil
 from pathlib import Path
 from rich.console import Console
 from prescient.core.logger import logger
@@ -16,6 +18,51 @@ def get_last_snapshot() -> dict | None:
     except Exception as e:
         logger.error(f"Failed to read undo state: {e}")
         return None
+
+def get_latest_system_snapshot() -> dict | None:
+    """
+    Scans the system for the most recent Timeshift or Snapper snapshot if prescient's JSON is missing/not existing
+    """
+    # Timeshift checking
+    if shutil.which("timeshift"):
+        try:
+            res = subprocess.run(
+                ["timeshift", "--list"],
+                capture_output=True,
+                text=True
+            )
+            matches = re.findall(r"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})", res.stdout)
+            if matches:
+                return{
+                    "provider": "timeshift",
+                    "snapshot_name": matches[-1], # Grab the very last one
+                    "created_at": 0.0,
+                    "trigger_reason": "Manual/System Snapshot (Non-Prescient)"
+                }
+        except Exception as e:
+            logger.error(f"Failed to list timeshift snapshots: {e}")
+    
+    # Snapper checking
+    if shutil.which("snapper"):
+        try:
+            res = subprocess.run(
+                ["snapper", "list"],
+                capture_output=True,
+                text=True
+            )
+            lines = [line.strip() for line in res.stdout.splitline() if line.strip() and line.strip()[0].isdigit()]
+            if lines:
+                last_id = lines[-1].split()[0]
+                return{
+                    "provider": "snapper",
+                    "snapshot_name": last_id,
+                    "created_at": 0.0,
+                    "trigger_reason": "Manual/System Snapshot (Non-Prescient)"
+                }
+        except Exception as e:
+            logger.error(f"Failed to list snapper snapshots: {e}")
+    
+    return None
     
 def verify_snapshot(state: dict) -> bool:
     """

@@ -15,7 +15,7 @@ from prescient.vanguard.system import run_preflight_checks, assess_blast_radius,
 from prescient.recovery.snapshot import trigger_snapshot
 from prescient.intelligence.diagnose import run_diagnostics
 from prescient.intelligence.autoheal import run_autoheal_sequence
-from prescient.recovery.undo import get_last_snapshot, verify_snapshot, execute_rollback
+from prescient.recovery.undo import get_last_snapshot, verify_snapshot, execute_rollback, get_latest_system_snapshot
 
 console = Console()
 app = typer.Typer(help="Prescient Linux: Predict, Protect, Recover")
@@ -109,6 +109,9 @@ def undo():
 
     # State check
     state = get_last_snapshot()
+    if not state:
+        logger.info("No Prescient state found. Scanning for manual system snapshots...")
+        state = get_latest_system_snapshot()
     if not state:
         logger.warning("Undo aborted: No snapshot history found.")
         console.print("[yellow]No recent prescient snapshots found on this system.[/yellow]")
