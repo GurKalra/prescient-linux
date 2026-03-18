@@ -1,5 +1,7 @@
 import os
 import sys
+import shutil
+import subprocess
 from pathlib import Path
 from rich.console import Console
 
@@ -26,9 +28,11 @@ def install():
     if pm == "apt":
         logger.info("Detected APT package manager.")
         install_apt_hook()
+        install_ramdisk_hook("apt")
     elif pm == "pacman":
         logger.info("Detected Pacman package manager.")
         install_pacman_hook()
+        install_ramdisk_hook("pacman")
     else:
         logger.error("Hook installation failed: Unsupported package manager detected.")
         console.print("[bold red] Error: Unsupported package manager. prescient currently supports apt and pacman.[/bold red]")
@@ -80,3 +84,67 @@ AbortOnFail
         logger.error(f"Failed to write Pacman hook to {hook_path}: {e}")
         console.print(f"[bold red]Failed to write Pacman hook: {e}!!!![/bold red]")
         sys.exit(1)
+
+def install_ramdisk_hook(pm_type: str):
+    """
+    Installs the emergency rescue environment into the kernel RAM disk.
+    """
+    logger.info("Installing RAM disk rescue hooks...")
+    console.print("\n[bold cyan]Injecting Emergency Rescue Environment into Kernel RAM Disk...[/bold cyan]")
+
+    # Resolve the path to scripts(dynamically)
+    core_dir = Path(__file__).parent
+    initramfs_dir = core_dir.parent / "initramfs"
+
+    rescue_src = initramfs_dir / "prescient-rescue.sh"
+    ubuntu_hook_src = initramfs_dir / "prescient-ubuntu-hook"
+    arch_hook_src = initramfs_dir / "prescient-arch-hook"
+
+    rescue_dest = Path("/usr/local/bin/prescient-rescue")
+
+    try:
+        shutil.copy(rescue_src, rescue_dest)
+        os.chmod(rescue_dest, 0o755)
+        console.print("  [green]Universal Rescue Script installed to '/usr/local/bin/prescient-rescue'[/green]")
+    except Exception as e:
+        logger.error(f"Failed to install rescue script: {e}")
+        console.print(f"  [red]!!!Failed to install rescue script: {e}[/red]")
+        return
+    
+    # Install OS specific hook and rebuild the kernel
+    try:
+        if pm_type == "apt":
+            hook_dest = Path("/etc/initramfs-tools/hooks/prescient-hook")
+            shutil.copy(ubuntu_hook_src, hook_dest)
+            os.chmod(hook_dest, 0o755)
+            console.print("  [green]Ubuntu Initramfs Hook installed.[/green]")
+            
+            console.print("  [cyan]Rebuilding initramfs image... (This may take a minute)[/cyan]")
+            subprocess.run(
+                ["update-initramfs", "-u"],
+                check=True
+            )
+            console.print("  [bold green]Kernel RAM Disk rebuilt successfully![/bold green]")
+
+        elif pm_type == "pacman":
+            hook_dir = Path("/etc/initcpio/install")
+            hook_dir.mkdir(parents=True, exist_ok=True)
+            hook_dest = hook_dir / "prescient-hook"
+
+            shutil.copy(arch_hook_src, hook_dest)
+            os.chmod(hook_dest, 0o755)
+            console.print("  [green]✓ Arch mkinitcpio Hook installed.[/green]")
+            
+            console.print("  [cyan]Rebuilding mkinitcpio image... (This may take a minute)[/cyan]")
+            subprocess.run(
+                ["mkinitcpio", "-P"],
+                check=True
+            )
+            console.print("  [bold green]Kernel RAM Disk rebuilt successfully![/bold green]")
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to rebuild RAM disk: {e}")
+        console.print(f"  [bold red]!!Failed to rebuild RAM disk. Rescue hook may not be active!![/bold red]")
+    except Exception as e:
+        logger.error(f"Failed to install RAM disk hook: {e}")
+        console.print(f"  [red]!!Failed to install RAM disk hook: {e}!![/red]")

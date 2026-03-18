@@ -1,0 +1,15 @@
+#!/bin/bash
+
+build() {
+    if [ -f "/usr/local/bin/prescient-rescue" ]; then
+        add_binary "/usr/local/bin/prescient-rescue" "/bin/prescient-rescue"
+        echo "Prescient: Injected emergency rescue hook into Arch mkinitcpio."
+    fi
+}
+
+help() {
+    cat <<HELPEOF
+This hook injects the Prescient Linux emergency rollback environment into the ramdisk.
+If the boot fails, type 'prescient-rescue' to restore the system.
+HELPEOF
+}

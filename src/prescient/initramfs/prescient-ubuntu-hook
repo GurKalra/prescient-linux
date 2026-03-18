@@ -1,0 +1,12 @@
+#!/bin/sh
+
+PREREQ=""
+prereqs() { echo "$PREREQ"; }
+case $1 in prereqs) prereqs; exit 0;; esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+if [ -f "/usr/local/bin/prescient-rescue" ]; then
+    copy_exec /usr/local/bin/prescient-rescue /bin/prescient-rescue
+    echo "Prescient: Injected emergency rescue hook into Ubuntu initramfs."
+fi
