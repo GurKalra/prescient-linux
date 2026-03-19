@@ -105,7 +105,7 @@ sudo prescient undo
 
 - To recover a completely unbootable system from the `(initramfs)` prompt:
 
-````bash
+```bash
 prescient-rescue
 ```
 
@@ -113,7 +113,7 @@ prescient-rescue
 
 ```bash
 sudo prescient heal
-````
+```
 
 - To completely remove prescient, its hooks, and all system files (Requires root):
 
