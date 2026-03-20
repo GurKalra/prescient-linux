@@ -6,6 +6,8 @@ import time
 import select
 import shutil
 import pwd
+import platform
+from datetime import datetime
 
 from prescient.core.hooks import install
 from prescient.core.logger import logger
@@ -13,9 +15,10 @@ from prescient.vanguard.security import analyze_security_risk
 from prescient.vanguard.boot import analyze_boot_health
 from prescient.vanguard.system import run_preflight_checks, assess_blast_radius, parse_and_sanitize_packages
 from prescient.recovery.snapshot import trigger_snapshot
-from prescient.intelligence.diagnose import run_diagnostics
+from prescient.intelligence.diagnose import run_diagnostics, get_raw_journalctl_output
 from prescient.intelligence.autoheal import run_autoheal_sequence
 from prescient.recovery.undo import get_last_snapshot, verify_snapshot, execute_rollback, get_latest_system_snapshot
+from prescient.intelligence.network import export_to_termbin
 
 console = Console()
 app = typer.Typer(help="Prescient Linux: Predict, Protect, Recover")
@@ -82,14 +85,64 @@ def predict():
     console.print("\n[bold green]Prescient Audit Complete. Proceeding with transaction...[/bold green]")
 
 @app.command()
-def diagnose():
+def diagnose(
+    share: bool = typer.Option(False, "--share", help="Export diagnostic logs to termbin.com or save locally.")
+):
     """
     Analyze system logs from the current boot to identify critical failures.
     """
     logger.info("User initiated post-crash diagnostics.")
     console.print("\n[bold cyan]~~~ Prescient Post-Crash Diagnostics ~~~[/bold cyan]")
-    run_diagnostics()
+    culprits = run_diagnostics()
 
+    if share:
+        logger.info("User requested crash report export.")
+        console.print("\n[dim yellow]Note: Logs will be uploaded publicly to termbin.com. Avoid sharing on sensitive systems.[/dim yellow]")
+        console.print("[dim]Packaging crash report...[/dim]")
+
+        # Building a report string for better readablity
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        report_text = f"=== PRESCIENT CRASH REPORT ===\n"
+        report_text += f"Generated: {now}\n"
+        report_text += f"Kernel: {platform.release()}\n"
+        report_text += f"System: {platform.system()} {platform.version()}\n"
+        report_text += f"{'='*30}\n\n"
+
+        report_text += "IDENTIFIED CULPRITS (Failing Subsystems):\n"
+        if culprits:
+            for identifier, data in culprits:
+                report_text += f"- {identifier}: {data['count']} errors (Latest: {data['latest_msg']})\n"
+        else:
+            report_text += "- No critical systemd errors found.\n"
+        
+        report_text += "\n=== RAW JOURNALCTL LOGS (Last 50) ===\n"
+        report_text += get_raw_journalctl_output(50)
+
+        # Trying termbin (requires internet)
+        console.print("[dim]Attempting to upload to termbin.com...[/dim]")
+        url = export_to_termbin(report_text)
+
+        if url:
+            logger.info(f"Crash report exported to termbin: {url}")
+            console.print(f"[bold green]Report exported successfully![/bold green]")
+            console.print(f"Share this URL for support: [bold cyan]{url}[/bold cyan]\n")
+        else:
+            # If not termbin, fallback to local saving
+            fallback_path = "/tmp/prescient_crash_report.txt"
+            logger.warning(f"Termbin upload failed. Saving report locally to {fallback_path}")
+            try:
+                with open(fallback_path, "w") as f:
+                    f.write(report_text)
+                
+                os.chmod(fallback_path, 0o600)
+
+                console.print("[bold red]Network upload failed (Are you offline?).[/bold red]")
+                console.print(f"[bold yellow]✓ Saved crash report locally instead: {fallback_path}[/bold yellow]\n")
+                console.print(f"[dim]You can read it with: cat {fallback_path}[/dim]\n")
+            except Exception as e:
+                logger.error(f"Failed to save local offline crash report: {e}")
+                console.print(f"[bold red]Failed to save local report: {e}[/bold red]\n")
 
 @app.command()
 def undo():

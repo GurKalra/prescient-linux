@@ -86,3 +86,20 @@ def run_diagnostics() -> list:
     console.print("[bold cyan]   If an update caused this, run your Timeshift/Snapper restore command.[/bold cyan]\n")
 
     return sorted_culprits
+
+def get_raw_journalctl_output(lines: int = 50) -> str:
+    """
+    Fetches the raw text output of recent journalctl errors for the crash report.
+    """
+    try:
+        cmd = ["journalctl", "-p", "3", "-b", "-n", str(lines)]
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except Exception as e:
+        logger.error(f"Failed to fetch raw journalctl logs: {e}")
+        return f"Failed to fetch raw journalctl logs: {e}\n"
