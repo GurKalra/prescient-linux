@@ -1,6 +1,7 @@
 import typer
 from rich.console import Console 
 import sys
+import subprocess
 import os
 import time
 import select
@@ -11,6 +12,7 @@ from datetime import datetime
 
 from prescient.core.hooks import install
 from prescient.core.logger import logger
+from prescient.core.update_checker import check_for_updates, get_local_version
 from prescient.vanguard.security import analyze_security_risk
 from prescient.vanguard.boot import analyze_boot_health
 from prescient.vanguard.system import run_preflight_checks, assess_blast_radius, parse_and_sanitize_packages
@@ -22,6 +24,16 @@ from prescient.intelligence.network import export_to_termbin
 
 console = Console()
 app = typer.Typer(help="Prescient Linux: Predict, Protect, Recover")
+
+@app.callback()
+def main(ctx: typer.Context):
+    """
+    Global hook that runs before commands to check for OTA updates.
+    """
+    if ctx.invoked_subcommand not in ["predict", "update", "uninstall", "install-hooks"]:
+        if check_for_updates():
+            console.print("[bold yellow]!A new version of Prescient is available![/bold yellow]")
+            console.print("[dim]Run `sudo prescient update` to install it securely.[/dim]\n")
 
 def _format_relative_time(timestamp: float) -> str:
     """
@@ -221,6 +233,68 @@ def heal():
 
     culprits = run_diagnostics()
     run_autoheal_sequence(culprits)
+
+@app.command()
+def update():
+    """
+    Securely pull and install the latest OTA update directly from GitHub.
+    """
+    logger.info("User initiated secure OTA update.")
+
+    if os.geteuid() != 0:
+        logger.error("Update failed: Root privileges required.")
+        console.print("\n[bold red]Error: Updating system-wide binaries requires root.[/bold red]")
+        console.print("Try running: [bold yellow]sudo prescient update[/bold yellow]\n")
+        sys.exit(1)
+    
+    console.print("[bold cyan]Verifying system state and fetching latest updates...[/bold cyan]")
+
+    sudo_user = os.environ.get("SUDO_USER")
+    if sudo_user:
+        real_home = pwd.getpwnam(sudo_user).pw_dir
+    else:
+        real_home = os.path.expanduser("~")
+    
+    install_dir = os.path.join(real_home, ".prescient")
+
+    if not os.path.exists(install_dir) or not os.path.exists(os.path.join(install_dir, ".git")):
+        console.print("[bold red]Error: Core installation directory (~/.prescient) or Git repository not found.[/bold red]")
+        console.print("[white]Please re-run the initial installation script to repair the local repository.[/white]")
+        sys.exit(1)
+    
+    try:
+        # Pull the latest code
+        console.print("[dim]Pulling verified source code via git...[/dim]")
+        subprocess.run(
+            ["git", "-C", install_dir, "pull", "origin", "main"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+
+        # Reinstall via pip (locally)
+        console.print("[dim]Applying updates to system binaries...[/dim]")
+        pip_path = os.path.join(install_dir, ".venv", "bin", "pip")
+
+        if not os.path.exists(pip_path):
+            console.print("[bold red]Error: Virtual environment not found in ~/.prescient/.venv[/bold red]")
+            console.print("[white]Please re-run the installation script to repair it.[/white]")
+            sys.exit(1)
+        
+        pip_cmd = ["pip", "install", "--upgrade", "--e", "."]
+        subprocess.run(
+            pip_cmd,
+            cwd=install_dir,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+
+        console.print("\n[bold green]Prescient updated successfully![/bold green]")
+        logger.info(f"OTA update complete. Installed version: {get_local_version()}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"OTA update failed during execution: {e.stderr if e.stderr else e}")
+        console.print("\n[bold red]Update failed. Please check your network connection or repository state.[/bold red]")
 
 @app.command()
 def uninstall():

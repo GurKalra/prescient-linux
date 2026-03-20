@@ -121,6 +121,12 @@ prescient-rescue
 sudo prescient heal
 ```
 
+- To securely pull and install the latest Over-The-Air (OTA) update directly from GitHub (Requires root):
+
+```bash
+sudo prescient update
+```
+
 - To completely remove prescient, its hooks, and all system files (Requires root):
 
 ```bash
