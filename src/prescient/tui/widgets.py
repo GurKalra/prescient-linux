@@ -34,7 +34,7 @@ class DuneWave(Static):
         
         amplitude = -6
         frequency = 0.3
-        center_y = height // 2
+        center_y = height // 2 - 1
 
         lines = [[" " for _ in range(width)] for _ in range(height)]
 
