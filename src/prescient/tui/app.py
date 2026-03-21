@@ -74,7 +74,10 @@ class CommandOutputScreen(Screen):
         self.command = command
     
     def compose(self) -> ComposeResult:
-        yield Static(f"[bold cyan]Running: prescient {self.command}[/bold cyan]\n[dim]Press Q or Esc to return[/dim]", id="output-header")
+        yield Static(
+            f"[bold cyan]> prescient {self.command}[/bold cyan]\n[dim]Press Q or Esc to return[/dim]", 
+            id="output-header"
+        )
         yield RichLog(id="output-log", highlight=True, markup=True)
         yield Footer()
 
@@ -93,7 +96,7 @@ class CommandOutputScreen(Screen):
             )
 
             for line in process.stdout:
-                self.call_from_thread(log.write, line.rstrip())
+                self.app.call_from_thread(log.write, line.rstrip())
             
             process.wait()
 
@@ -109,30 +112,34 @@ class CommandOutputScreen(Screen):
             self.call_from_thread(log.write, f"[bold red]Error: {e}[/bold red]")
             logger.error(f"TUI overlay worker crashed for '{self.command}': {e}")
 
-class TopHeader(Static):
+# WIDGETS
+class TopHeader(Horizontal):
     """
     The custom header with the logo, tagline, GitHub link, and exit button.
     """
     def compose(self) -> ComposeResult:
-        with Horizontal(id="header-container"):
-            yield Static(ASCII_LOGO, id="logo")
-            with Vertical(id="tagline-container"):
-                yield Static("Predict. Protect. Recover.", id="tagline")
-                yield Static(f"v{get_local_version()}", id="version")
+        yield Static(ASCII_LOGO, id="logo")
+        with Vertical(id="tagline-container"):
+            yield Static(
+                f"Predict. Protect. Recover. | v{get_local_version()}", 
+                id="tagline"
+            )
             
-            with Horizontal(id="header-right"):
-                yield Static(
-                    "[@click=app.open_link]Repository[/]\nConsider starring the project!",
-                    id="github-text"
-                )
-                yield Button("Exit TUI", id="exit-button", variant="error")
+        with Vertical(id="header-right"):
+            yield Static(
+                "[@click=app.open_link]Repository[/]\nConsider starring the project!",
+                id="github-text"
+            )
+            yield Button("[ Exit TUI ]", id="exit-button", classes="terminal-btn")
 
 class MainDashboard(Container):
     """
     The main dashboard layout.
     """
     def compose(self) -> ComposeResult:
-        with Horizontal():
+        yield TopHeader(id="top-header")
+
+        with Horizontal(id="main-content-split"):
             # Left Sidebar
             with Vertical(id="sidebar"):
                 yield Static("COMMANDS", classes="sidebar-title")
@@ -150,8 +157,8 @@ class MainDashboard(Container):
             # Right Content area
             with Vertical(id="right-pane"):
                 # Update Banner / Animation
-                with Vertical(id="update-banner"):
-                    yield Static("System is up to date. No new OTA releases.", classes="update-text")
+                with Horizontal(id="update-banner"):
+                    yield Static("System is up to date. No new OTA releases.", id="update-text")
                     yield DuneWave(id="main-wave")
 
                 # Markdown docs for each command
@@ -159,15 +166,15 @@ class MainDashboard(Container):
                     yield Markdown("Select a command from the left to view its documentation.", id="doc-viewer")
 
                     with Center(id="action-area"):
-                        yield Button("Run Command", id="btn-run-cmd", variant="primary", classes="hidden")
+                        yield Button("[ Run Command ]", id="btn-run-cmd", classes="hidden terminal-btn")
                         yield Static("To use this, exit the TUI and run:\n[bold cyan]sudo prescient ...[/bold cyan]", id="cli-warning", classes="hidden")
 
     async def on_mount(self) -> None:
         """
         Added this to make sure it runs after the whole dashboard is loaded
         """
+        logger.debug("MainDashboard mounted. Triggering update check.")
         self.app.run_update_check()
-
 class InstallScreen(Container):
     """
     The centered first-time install screen.
@@ -176,7 +183,7 @@ class InstallScreen(Container):
         with Middle():
             with Center():
                 yield Static("Prescient is installed, but system hooks are missing.", classes="install-text")
-                yield Button("Install System Hooks", id="btn-install-hooks", variant="success")
+                yield Button("Install System Hooks", id="btn-install-hooks", classes="terminal-btn")
                 yield Static("", id="install-status", classes="dim-text")
 
 # MAIN APP
@@ -199,39 +206,53 @@ class PrescientTUI(App):
 
     current_command: reactive[str] = reactive("")
 
-    CSS = """Screen { background: $surface; }
-    
-    /* Header Styling */
-    #header-container { height: 6; dock: top; border-bottom: solid $primary; padding: 0 1; }
-    #logo { width: 30; content-align: left middle; }
-    #tagline-container { width: 1fr; content-align: left middle; padding-top: 1; }
-    #tagline { text-style: bold; }
-    #version { color: $text-muted; }
-    #header-right { width: 50; align: right middle; }
-    #github-text { color: $text-muted; text-align: right; margin-right: 2; margin-top: 1; }
+    CSS = """
+    Screen { background: $surface; }
+
+    /* Header */
+    #top-header { height: 5; dock: top; padding: 0 1; border-bottom: solid $primary-darken-2; }
+    #logo { width: 45; content-align: left middle; }
+    #tagline-container { width: 1fr; content-align: left middle; padding-top: 2; }
+    #tagline { color: $text-muted; }
+    #header-right { width: 40; content-align: right middle; padding-top: 1; }
+    #github-text { text-align: right; }
     #exit-button { margin-top: 1; }
-    
-    /* Main Layout Styling */
-    #sidebar { width: 30; border-right: solid $primary; height: 100%; padding: 1 1; }
+
+    /* Main Layout */
+    #main-content-split { height: 1fr; }
+    #sidebar { width: 30; border-right: solid $primary-darken-2; height: 100%; padding: 1 1; }
     .sidebar-title { text-style: bold; color: $text-muted; margin-bottom: 1; padding-left: 1; }
-    #health-status { dock: bottom; border-top: solid $primary; padding: 1; height: 4; }
-    
+    #health-status { dock: bottom; border-top: solid $primary-darken-2; padding: 1 0 0 1; height: 4; }
+
+    /* Right Pane */
     #right-pane { width: 1fr; height: 100%; }
-    #update-banner { height: 7; border-bottom: solid $primary; padding: 1 2; content-align: center middle; color: $success; }
-    .update-text { text-style: bold; }
-    
+    #update-banner { height: 5; border-bottom: solid $primary-darken-2; padding: 0 2; }
+    #update-text { width: 1fr; content-align: left middle; color: $success; text-style: bold; }
+    #main-wave { width: 40; height: 5; }
+
+    /* Content Area */
     #content-area { height: 1fr; padding: 1 3; }
     #doc-viewer { height: 1fr; overflow-y: auto; }
-    
     #action-area { height: auto; padding-top: 1; border-top: dashed $primary-darken-2; }
-    #cli-warning { text-align: center; padding: 1; border: solid $warning; background: $boost; }
+    #cli-warning { text-align: center; padding: 1; color: $warning; }
     .hidden { display: none; }
-    
+
+    /* Terminal Button Styling */
+    .terminal-btn {
+        background: transparent;
+        border: none;
+        color: $accent;
+        text-style: bold;
+        min-width: 20;
+    }
+    .terminal-btn:focus { background: $accent; color: $surface; }
+    .terminal-btn:hover { background: $boost; }
+
     /* Install Screen */
     .install-text { text-align: center; margin-bottom: 2; }
     .dim-text { color: $text-muted; text-align: center; margin-top: 2; }
-    
-    /* Overlay Screen Styling */
+
+    /* Overlay Screen */
     #output-header { padding: 1; border-bottom: solid $primary-darken-2; background: $boost; }
     #output-log { height: 1fr; padding: 1; background: $surface; }
     """
@@ -253,7 +274,7 @@ class PrescientTUI(App):
         Thread-safe UI update for the update banner.
         """
         try:
-            self.query_one(".update-text", Static).update(
+            self.query_one("#update-text", Static).update(
                 "[bold yellow]New Prescient version available![/bold yellow]\nSelect 'update' from the left panel."
             )
             logger.info("TUI update banner displayed successfully.")
@@ -261,8 +282,6 @@ class PrescientTUI(App):
             logger.error(f"TUI failed to display update banner: {e}")
     
     def compose(self) -> ComposeResult:
-        yield TopHeader()
-
         hook_path = "/etc/apt/apt.conf.d/99prescient-guardian"
         if os.path.exists(hook_path):
             logger.info("TUI launched: hooks detected, showing main dashboard.")
@@ -318,9 +337,6 @@ class PrescientTUI(App):
                 logger.debug(f"TUI: user tried to run non-runnable command: {self.current_command}")
     
     def action_open_link(self) -> None:
-        """
-        Opens a URL in the default browser.
-        """
         logger.info(f"User opened GitHub repository link.")
         webbrowser.open("https://github.com/GurKalra/prescient-linux")
 
@@ -386,7 +402,7 @@ class PrescientTUI(App):
             if config["runnable"]:
                 btn.display = True
                 warning.display = False
-                btn.label = f"Run {self.current_command.capitalize()}"
+                btn.label = f"[ Run {self.current_command.capitalize()} ]"
             else:
                 btn.display = False
                 warning.display = True
