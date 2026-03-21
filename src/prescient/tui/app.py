@@ -25,7 +25,7 @@ COMMAND_REGISTRY = {
     "uninstall": {"file": "docs/uninstall.md", "runnable": False, "cli_cmd": "sudo prescient uninstall"},
 }
 
-ASCII_LOGO = """[bold cyan]
+ASCII_LOGO = r"""[bold cyan]
 ___  ____ ____ ____ ____ _ ____ _  _ ___ 
 |__] |__/ |___ [__  |    | |___ |\ |  |  
 |    |  \ |___ ___] |___ | |___ | \|  |  
@@ -98,7 +98,7 @@ class CommandOutputScreen(Screen):
             process.wait()
 
             if process.returncode == 0:
-                self.call_from_thread(log.write, "\n[bold green]✓ Command completed successfully.[/bold green]")
+                self.call_from_thread(log.write, "\n[bold green]Command completed successfully.[/bold green]")
                 self.call_from_thread(log.write, "[dim]Press Q or Esc to return to dashboard.[/dim]")
                 logger.info(f"TUI overlay command '{self.command}' completed successfully.")
             else:
@@ -122,8 +122,7 @@ class TopHeader(Static):
             
             with Horizontal(id="header-right"):
                 yield Static(
-                    "[@click='app.open_link(\"https://github.com/GurKalra/prescient-linux\")']Repository[/@click]\n"
-                    "Consider starring the project!",
+                    "[@click=app.open_link]Repository[/]\nConsider starring the project!",
                     id="github-text"
                 )
                 yield Button("Exit TUI", id="exit-button", variant="error")
@@ -318,12 +317,12 @@ class PrescientTUI(App):
             elif config and not config["runnable"]:
                 logger.debug(f"TUI: user tried to run non-runnable command: {self.current_command}")
     
-    def action_open_link(self, url: str) -> None:
+    def action_open_link(self) -> None:
         """
         Opens a URL in the default browser.
         """
-        logger.info(f"User opened external link: {url}")
-        webbrowser.open(url)
+        logger.info(f"User opened GitHub repository link.")
+        webbrowser.open("https://github.com/GurKalra/prescient-linux")
 
     def action_open_update(self) -> None:
         """
