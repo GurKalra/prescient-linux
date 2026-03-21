@@ -42,7 +42,7 @@ Prescient does not replace your package manager. It performs deterministic pre-f
 
 - **TTY Pastebin Exporter (`prescient diagnose --share`):** _(Live)_ A frictionless log-sharing mechanism designed for headless or broken GUI states. It securely pipes anonymized crash traces and `journalctl` outputs directly to a CLI-friendly pastebin (`termbin.com`) using native Python sockets (bypassing the need for external tools like `netcat`), generating a short URL for remote debugging. It includes a secured, local offline fallback mechanism if the system's network drivers are completely broken.
 
-- **Network & Mirror Pre-Flight:** _(Planned)_ An active network health auditor that pings your configured package mirrors (e.g., `/etc/apt/sources.list`) before a transaction begins. It will prevent broken updates caused by mid-download 404 errors, expired GPG signatures, or unresponsive repository servers.
+- **Network & Mirror Pre-Flight:** _(Live)_ An active, concurrent network health auditor that pings your configured package mirrors (supporting both legacy `.list` and modern DEB822 `.sources`) before a transaction begins. It prevents broken or partial updates caused by dead repository servers or 404 errors, taking milliseconds to run using thread pools, and smartly bypasses itself during local package removals.
 
 - **Interactive TUI Control Center:** _(Planned)_ A comprehensive Terminal User Interface. Moving beyond a read-only status screen, this dashboard acts as a visual command center. Users can navigate graphical buttons with their keyboard to execute core commands (`undo`, `heal`, `diagnose`), view system health metrics, seamlessly pull OTA updates directly from the main repository, or cleanly trigger the system uninstall sequence.
 
@@ -149,7 +149,7 @@ This project is actively being built for FOSS Hack 2026.
 - [x] **Phase 7:** Transparent Auto-Healer (prescient heal with interactive command proposals).
 - [x] **Phase 8:** Initramfs Rescue Hook (Minimal POSIX shell failsafe for broken boots)
 - [x] **Phase 9:** TTY Pastebin Exporter (prescient diagnose --share via termbin).
-- [ ] **Phase 10:** Network & Mirror Pre-Flight (Checking repo health before APT runs).
+- [x] **Phase 10:** Network & Mirror Pre-Flight (Checking repo health before APT runs).
 - [ ] **Phase 11:** Interactive TUI Control Center (Visual execution, OTA updates, and metrics)
 
 ---

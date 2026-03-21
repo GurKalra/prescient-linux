@@ -7,6 +7,7 @@ from rich.console import Console
 from prescient.config import CONFIG
 from prescient.core.logger import logger
 from prescient.intelligence.heuristic import scan_transaction_heuristics
+from prescient.core.mirror_checker import run_mirror_preflight 
 
 console = Console()
 
@@ -35,7 +36,6 @@ def parse_and_sanitize_packages(raw_input: str) -> list[str]:
             continue
 
         # Extract filename from path
-        first_token = line.split()[0]
         basename = line.split('/')[-1]
 
         # Extract actual package name
@@ -98,7 +98,6 @@ def check_pm_health() -> tuple[bool, str]:
 def run_preflight_checks() -> bool:
     """
     Executes all system-level health checks.
-    Returns True if safe to proceed, False if a Hard-Stop is required.
     """
     console.print("[bold cyan]~~~Prescient Pre-Flight Audit...~~~[/bold cyan]")
     logger.info("Initiating pre-flight system health audit.")
@@ -131,6 +130,13 @@ def run_preflight_checks() -> bool:
             logger.error(f"Pre-flight VETO: Root partition critically low on space ({free_gb:.2f} GB free).")
             console.print(f" Root Partition Space: [bold red]{free_gb:.2f} GB free[/bold red] (Minimum required: 2.0 GB)")
             console.print("    [white]Running an update with low disk space can corrupt your system. Please free up space.[/white]")
+            is_safe = False
+    
+    #3. Mirror Preflight
+    if not is_removal:
+        console.print(" Mirror Health:")
+        mirror_ok = run_mirror_preflight()
+        if not mirror_ok:
             is_safe = False
 
     if is_safe:
