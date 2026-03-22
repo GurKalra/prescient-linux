@@ -50,11 +50,9 @@ echo "Handing off to Makefile for system integration..."
 make install
 
 echo ""
-echo "Prescient installed successfully!"
-echo "Core commands available: "
-echo "  sudo prescient install-hooks  # Wire into apt/pacman"
-echo "  sudo prescient predict        # Manual risk scan"
-echo "  sudo prescient diagnose       # Post-crash analysis"
-echo "  sudo prescient heal           # Transparent auto-recovery"
-echo "  sudo prescient undo           # Roll back last update"
-echo "  sudo prescient uninstall      # Complete system purge"
+echo "[+] Prescient core installed successfully!"
+echo "[+] Booting Vanguard Engine (TUI)...."
+
+sleep 1.2
+
+prescient tui

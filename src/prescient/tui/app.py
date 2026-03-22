@@ -1,4 +1,5 @@
 import os
+import time
 import subprocess
 import webbrowser
 from pathlib import Path
@@ -56,7 +57,6 @@ class TopHeader(Horizontal):
             yield Static(f"Predict. Protect. Recover. | v{get_local_version()}", id="tagline")
         with Vertical(id="header-right"):
             yield Static("[@click=app.open_link]Repository[/]\n[dim]Thank you for using prescient[/dim]\n[dim]Consider starring the project![/dim]", id="github-text")
-            yield Button("[ exit ]", id="exit-button", classes="terminal-btn")
 
 class MainDashboard(Container):
     def compose(self) -> ComposeResult:
@@ -90,12 +90,12 @@ class MainDashboard(Container):
 class InstallScreen(Container):
     def compose(self) -> ComposeResult:
         yield DuneWave(id="install-wave")
-        with Middle():
-            with Center():
-                yield Static(ASCII_LOGO, id="install-title")
-                yield Static("System hooks are not yet installed.", classes="install-text")
-                yield Static("Press [bold #8ec07c]Enter[/bold #8ec07c] to wire Prescient into your package manager.", classes="dim-text")
-                yield Static("", id="install-status", classes="dim-text")
+        with Vertical(id="install-content"):
+            yield Static(ASCII_LOGO, id="install-title")
+            yield Static("System hooks are not yet installed.", classes="install-text")
+            yield Static("Press [bold #8ec07c]Enter[/bold #8ec07c] to wire Prescient into your package manager.", classes="dim-text")
+            yield Static("", id="install-status", classes="dim-text")
+        yield DuneWave(id="install-wave-bottom")
 
 # Main App
 class PrescientTUI(App):
@@ -141,8 +141,8 @@ class PrescientTUI(App):
 
     #right-pane { width: 1fr; height: 100%; }
     #update-banner { height: 8; border-bottom: solid $primary-darken-2; padding: 0 2; }
-    #update-text { width: 1fr; content-align: left middle; color: $success; text-style: bold; }
-    #main-wave { width: 50; height: 8; dock: right; }
+    #update-text { width: 1fr; content-align: center middle; text-align: center; color: $success; text-style: bold; }
+    #main-wave { width: 1fr; height: 8; }
 
     #content-area { height: 1fr; padding: 1 3; }
     #doc-viewer { height: 1fr; overflow-y: auto; }
@@ -157,8 +157,10 @@ class PrescientTUI(App):
     .terminal-btn:hover { background: $boost; }
 
     /* Install Screen Aesthetics */
-    #install-wave { height: 8; width: 100%; dock: top; }
-    #install-title { width: 45; margin-bottom:2; }
+    #install-content { height: 1fr; align: center middle; }
+    #install-wave-top { height: 8; width: 100%; dock: top; }
+    #install-wave-bottom { height: 8; width: 100%; dock: bottom; }
+    #install-title { width: 45; margin-bottom: 2; }
     .install-text { text-align: center; margin-bottom: 2; }
     .dim-text { color: $text-muted; text-align: center; margin-top: 2; }
     """
@@ -206,7 +208,8 @@ class PrescientTUI(App):
             status_text.update("[dim #8ec07c]Installing hooks... do not close terminal[/dim #8ec07c]")
         except Exception:
             pass
-
+        
+        success = False
         with self.suspend():
             print("\n[Prescient] Installing system hooks. You may be prompted for your password...")
             try:
@@ -215,11 +218,21 @@ class PrescientTUI(App):
                     check=True
                 )
                 print("\n[Prescient] Hooks successfully installed!")
+                time.sleep(1.3)
+                success=True
             except subprocess.CalledProcessError as e:
                 print(f"\n[Prescient] Hook installation failed (exit code {e.returncode}).")
                 input("\nPress Enter to return to the TUI...")
-
-        self.exit(message="Installation complete. Run `prescient tui` again to access the dashboard.")
+        if success:
+            logger.info("Hot-swapping to MainDashboard after successful install.")
+            self.query_one("#install-screen").remove()
+            self.mount(MainDashboard(id="main-dashboard"), before = self.query_one(Footer))
+            self.notify("Vanguard Engine Online.", title="System Ready")
+        else:
+            try:
+                status_text.update("[#fb4934]Installation failed. Check prescient.log[/#fb4934]")
+            except Exception:
+                pass
 
     def action_focus_right_pane(self) -> None:
         try:
@@ -291,8 +304,3 @@ class PrescientTUI(App):
             except FileNotFoundError:
                 logger.warning(f"TUI doc file missing: {doc_path}")
                 self.query_one("#doc-viewer", Markdown).update(f"# Missing Doc\nCould not find `{doc_path}`.")
-    
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "exit-button":
-            logger.info("User exited TUI via Exit button.")
-            self.exit()
