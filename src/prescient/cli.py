@@ -29,6 +29,13 @@ def check_sudo(command_name: str, strict: bool=False):
     """
     Checks for root privileges.
     """
+    if os.geteuid() != 0:
+        if strict:
+            console.print(f"\n[bold red]Error: `{command_name}` requires root privileges to execute.[/bold red]")
+            console.print(f"Try running: [bold yellow]sudo prescient {command_name}[/bold yellow]\n")
+            sys.exit(1)
+        else:
+            console.print(f"[dim yellow]Hint: You are running `{command_name}` without sudo. Some system files may be unreadable.[/dim yellow]\n")
 
 @app.callback()
 def main(ctx: typer.Context):
