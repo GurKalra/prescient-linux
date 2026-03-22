@@ -44,7 +44,7 @@ Prescient does not replace your package manager. It performs deterministic pre-f
 
 - **Network & Mirror Pre-Flight:** _(Live)_ An active, concurrent network health auditor that pings your configured package mirrors (supporting both legacy `.list` and modern DEB822 `.sources`) before a transaction begins. It prevents broken or partial updates caused by dead repository servers or 404 errors, taking milliseconds to run using thread pools, and smartly bypasses itself during local package removals.
 
-- **Interactive TUI Control Center:** _(Planned)_ A comprehensive Terminal User Interface. Moving beyond a read-only status screen, this dashboard acts as a visual command center. Users can navigate graphical buttons with their keyboard to execute core commands (`undo`, `heal`, `diagnose`), view system health metrics, seamlessly pull OTA updates directly from the main repository, or cleanly trigger the system uninstall sequence.
+- **Read-Only TUI Dashboard:** _(Live)_ A premium, Gruvbox-themed Terminal User Interface. It acts as a safe, visual command center. Users can navigate via keyboard to view system health metrics, read dynamic command documentation, monitor OTA update availability, and securely handle first-time system hook installation—all completely isolated from accidental root-level executions.
 
 ## The North Stars of prescient
 
@@ -83,6 +83,12 @@ sudo prescient install-hooks
 
 ```bash
 prescient --help
+```
+
+- To open the visual system dashboard and documentation hub:
+
+```bash
+prescient tui
 ```
 
 - To run a system update simulatoin and risk analysis:
@@ -150,7 +156,7 @@ This project is actively being built for FOSS Hack 2026.
 - [x] **Phase 8:** Initramfs Rescue Hook (Minimal POSIX shell failsafe for broken boots)
 - [x] **Phase 9:** TTY Pastebin Exporter (prescient diagnose --share via termbin).
 - [x] **Phase 10:** Network & Mirror Pre-Flight (Checking repo health before APT runs).
-- [ ] **Phase 11:** Interactive TUI Control Center (Visual execution, OTA updates, and metrics)
+- [x] **Phase 11:** Interactive TUI Control Center (Visual execution, OTA updates, and metrics)
 
 ---
 
