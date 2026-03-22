@@ -42,7 +42,7 @@ def main(ctx: typer.Context):
     """
     Global hook that runs before commands to check for OTA updates.
     """
-    if ctx.invoked_subcommand not in ["predict", "update", "uninstall", "install-hooks"]:
+    if ctx.invoked_subcommand not in ["predict", "update", "uninstall", "install-hooks", "tui"]:
         if check_for_updates():
             console.print("[bold yellow]!A new version of Prescient is available![/bold yellow]")
             console.print("[dim]Run `sudo prescient update` to install it securely.[/dim]\n")
