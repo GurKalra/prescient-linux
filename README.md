@@ -24,7 +24,7 @@ Prescient does not replace your package manager. It performs deterministic pre-f
 
 ## Core Features
 
-- **The Vanguard Engine (`prescient predict`):** _(Live)_ A blazing-fast, RAM-cached (`/dev/shm`) transaction auditor. It evaluates incoming packages in under 200ms, pulling the emergency brake (`sys.exit(1)`) if it detects `/boot` partition saturation, a locked `dpkg` state, or a collision between new kernels and unsigned DKMS modules while Secure Boot is active.
+- **The Vanguard Engine (`prescient predict`):** _(Live)_ A blazing-fast, RAM-cached (`/dev/shm`) transaction auditor. It evaluates incoming packages in under 200ms, pulling the emergency brake (`raise typer.Exit(code=1)`) if it detects `/boot` partition saturation, a locked `dpkg` state, or a collision between new kernels and unsigned DKMS modules while Secure Boot is active.
 
 - **Universal Pre-Transaction Hooks:** _(Live)_ Native interceptors injected directly into package managers (using `DPkg::Pre-Install-Pkgs` for `apt`, with `pacman` support planned). prescient doesn't need to be run manually—it wakes up automatically at the point of no return.
 

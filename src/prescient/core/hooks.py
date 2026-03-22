@@ -1,5 +1,6 @@
 import os
 import sys
+import typer
 import shutil
 import subprocess
 from pathlib import Path
@@ -20,7 +21,7 @@ def install():
         logger.error("Hook installation failed: Root privileges required.")
         console.print("[bold red] Error: Installing system hooks requires root privileges!!![/bold red]")
         console.print("Try running: [bold yellow]sudo prescient install-hooks[/bold yellow]")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
     # 2. Detect the Host OS Package Manager
     pm = detect_package_manager()
@@ -36,7 +37,7 @@ def install():
     else:
         logger.error("Hook installation failed: Unsupported package manager detected.")
         console.print("[bold red] Error: Unsupported package manager. prescient currently supports apt and pacman.[/bold red]")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
 def install_apt_hook():
     """Installs the pre-invoke hook for Debian/Ubuntu (APT)."""
@@ -53,7 +54,7 @@ def install_apt_hook():
     except Exception as e:
         logger.error(f"Failed to write APT hook to {hook_path}: {e}")
         console.print(f"[bold red] Failed to write APT hook: {e}!!![/bold red]")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
 def install_pacman_hook():
     """Installs the pre-transaction hook for Arch Linux (Pacman)."""
@@ -83,7 +84,7 @@ AbortOnFail
     except Exception as e:
         logger.error(f"Failed to write Pacman hook to {hook_path}: {e}")
         console.print(f"[bold red]Failed to write Pacman hook: {e}!!!![/bold red]")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
 def install_ramdisk_hook(pm_type: str):
     """

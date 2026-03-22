@@ -1,5 +1,5 @@
 # ==========================================
-# prescient Linux - Extensible Rules Schema
+# Prescient Linux - Extensible Rules Schema
 # ==========================================
 # Add or remove packages here to customize what prescient considers "dangerous".
 # If a package update contains any of these strings, prescient will trigger a snapshot.

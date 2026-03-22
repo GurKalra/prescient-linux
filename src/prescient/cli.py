@@ -33,7 +33,7 @@ def check_sudo(command_name: str, strict: bool=False):
         if strict:
             console.print(f"\n[bold red]Error: `{command_name}` requires root privileges to execute.[/bold red]")
             console.print(f"Try running: [bold yellow]sudo prescient {command_name}[/bold yellow]\n")
-            sys.exit(1)
+            raise typer.Exit(code=1)
         else:
             console.print(f"[dim yellow]Hint: You are running `{command_name}` without sudo. Some system files may be unreadable.[/dim yellow]\n")
 
@@ -97,7 +97,7 @@ def predict():
         logger.error("VETO: System pre-flight health checks failed. Aborting transaction.")
         console.print("\n[bold red]!!!Prescient VETO: System health checks failed!!![/bold red]")
         console.print("[white]Aborting installation to prevent system breakage.[/white]")
-        sys.exit(1)  # This stops the APT transaction
+        raise typer.Exit(code=1)  # This stops the APT transaction
 
     # 2. The Surgical Probes & Recovery Engine
     if input_data:
@@ -208,7 +208,7 @@ def undo():
         logger.error(f"Undo aborted: Snapshot {state.get('snapshot_name')} no longer exists.")
         console.print(f"[bold red]Error: The snapshot '{state.get('snapshot_name')}' could not be found.[/bold red]")
         console.print("[white]It may have been manually deleted or cleared by your backup provider's cleanup rules.[/white]\n")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
     provider = str(state.get("provider", "unknown")).capitalize()
     snap_name = state.get("snapshot_name", "Unknown")
@@ -240,7 +240,7 @@ def undo():
             console.print("[bold green]Rollback complete. Please reboot manually: [yellow]sudo reboot[/yellow][/bold green]")
     else:
         console.print("[bold red]Rollback failed. Check /var/log/prescient.log for details.[/bold red]\n")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
 @app.command()
 def heal():
@@ -255,13 +255,25 @@ def heal():
     run_autoheal_sequence(culprits)
 
 @app.command()
-def update():
+def update(
+    force: bool = typer.Option(False, "--force", help="Force reinstall even if up to date")
+):
     """
     Securely pull and install the latest OTA update directly from GitHub.
     """
     check_sudo("update", strict=True)
     logger.info("User initiated secure OTA update.")    
     console.print("[bold cyan]Verifying system state and fetching latest updates...[/bold cyan]")
+
+    # Checking for an actual update before pulling
+    if not force:
+        if not check_for_updates():
+            console.print("[bold green]System is already up to date. No new OTA releases found.[/bold green]")
+            console.print("[dim](Use 'sudo prescient update --force' to reinstall anyway)[/dim]\n")
+            logger.info("OTA update skipped: System is already at the latest version.")
+            raise typer.Exit()
+    else:
+        logger.info("OTA update forced by user (--force flag).")
 
     sudo_user = os.environ.get("SUDO_USER")
     if sudo_user:
@@ -274,7 +286,7 @@ def update():
     if not os.path.exists(install_dir) or not os.path.exists(os.path.join(install_dir, ".git")):
         console.print("[bold red]Error: Core installation directory (~/.prescient) or Git repository not found.[/bold red]")
         console.print("[white]Please re-run the initial installation script to repair the local repository.[/white]")
-        sys.exit(1)
+        raise typer.Exit(code=1)
     
     try:
         # Pull the latest code
@@ -293,7 +305,7 @@ def update():
         if not os.path.exists(python_path):
             console.print("[bold red]Error: Virtual environment not found in ~/.prescient/.venv[/bold red]")
             console.print("[white]Please re-run the installation script to repair it.[/white]")
-            sys.exit(1)
+            raise typer.Exit(code=1)
         
         pip_cmd = [python_path, "-m", "pip", "install", "--upgrade", "-e", "."]
         subprocess.run(
