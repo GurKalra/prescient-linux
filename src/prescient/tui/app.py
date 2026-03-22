@@ -78,7 +78,7 @@ class MainDashboard(Container):
             
             with Vertical(id="right-pane"):
                 with Horizontal(id="update-banner"):
-                    yield Static("System is up to date. No new OTA releases.", id="update-text")
+                    yield Static("", id="update-text")
                     yield DuneWave(id="main-wave")
                 
                 with Vertical(id="content-area"):
@@ -140,8 +140,8 @@ class PrescientTUI(App):
 
     #right-pane { width: 1fr; height: 100%; }
     #update-banner { height: 8; border-bottom: solid $primary-darken-2; padding: 0 2; align: center middle; }
-    #update-text { width: 1fr; height: 8; content-align: center middle; text-align: center; color: $success; text-style: bold; }
-    #main-wave { width: 1fr; height: 8; dock: right;}
+    #update-text { width: 1fr; height: 8; content-align: center middle; text-align: center; color: $success; text-style: bold; display: none; }
+    #main-wave { width: 1fr; height: 8; }
 
     #content-area { height: 1fr; padding: 1 3; }
     #doc-viewer { height: 1fr; overflow-y: auto; }
@@ -174,9 +174,11 @@ class PrescientTUI(App):
     
     def _show_update_banner(self) -> None:
         try:
-            self.query_one("#update-text", Static).update(
+            banner_text = self.query_one("#update-text", Static)
+            banner_text.update(
                 "[bold #fabd2f]New Prescient version available![/bold #fabd2f]\nPress 'u' to jump to 'update'."
             )
+            banner_text.display = True
         except Exception as e:
             logger.error(f"TUI failed to display update banner: {e}")
     

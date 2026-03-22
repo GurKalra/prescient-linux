@@ -1,5 +1,6 @@
 import urllib.request
 import re
+from pathlib import Path
 from importlib.metadata import version, PackageNotFoundError
 from prescient.core.logger import logger
 
@@ -8,8 +9,26 @@ def get_local_version() -> str:
     Fetches the currently installed version from package metadata.
     """
     try:
-        return version("prescient-linux")
+        # Looking in pyproject.toml
+        pyproject_path = Path(__file__).resolve().parent.parent.parent.parent / "pyproject.toml"
+        if pyproject_path.exists():
+            content = pyproject_path.read_text(encoding="utf-8")
+            
+            match = re.search(r'^\s*version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+            if match:
+                local_ver = match.group(1).strip()
+                logger.debug(f"Local version '{local_ver}' loaded from pyproject.toml")
+                return local_ver
+    except Exception as e:
+        logger.debug(f"Failed to read local pyproject.toml: {e}")
+        
+    try:
+        # Fallbacking to standard package metadata
+        fallback_ver = version("prescient-linux")
+        logger.debug(f"Local version '{fallback_ver}' loaded from package metadata fallback")
+        return fallback_ver
     except PackageNotFoundError:
+        logger.warning("Local version could not be determined (Package not found).")
         return "unknown"
 
 def check_for_updates() -> bool:
@@ -19,6 +38,7 @@ def check_for_updates() -> bool:
     """
     local_version_raw = get_local_version()
     if local_version_raw == "unknown":
+        logger.debug("OTA update check aborted: Local version is unknown.")
         return False
     
     local_version = local_version_raw.lstrip("v").strip()
@@ -35,8 +55,10 @@ def check_for_updates() -> bool:
                 remote_version = match.group(1).lstrip("v").strip()
                 if remote_version != local_version:
                     return True
+            else:
+                logger.warning("OTA Check failed: Could not parse version from remote pyproject.toml")
     
     except Exception as e:
-        logger.debug(f"Update check skipped or failed: {e}")
+        logger.warning(f"OTA update check skipped or failed (offline/timeout): {e}")
 
     return False
