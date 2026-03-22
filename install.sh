@@ -55,4 +55,4 @@ echo "[+] Booting Vanguard Engine (TUI)...."
 
 sleep 1.2
 
-prescient tui
+prescient tui < /dev/tty
