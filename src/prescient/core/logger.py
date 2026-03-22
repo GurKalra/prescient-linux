@@ -25,9 +25,9 @@ def _setup_logger() -> logging.Logger:
             with open(log_path, 'a') as f:
                 pass
         
-        # SECURITY: Lock down /var/log/prescient.log to root-only
+        # Enforcing 644 so that standard users (TUI) read it .
         if is_root:
-            os.chmod(log_path, 0o600)
+            os.chmod(log_path, 0o644)
         
         file_handler = logging.FileHandler(log_path)
 

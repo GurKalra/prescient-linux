@@ -25,6 +25,11 @@ from prescient.intelligence.network import export_to_termbin
 console = Console()
 app = typer.Typer(help="Prescient Linux: Predict, Protect, Recover")
 
+def check_sudo(command_name: str, strict: bool=False):
+    """
+    Checks for root privileges.
+    """
+
 @app.callback()
 def main(ctx: typer.Context):
     """
@@ -64,6 +69,7 @@ def install_hooks():
     """
     Install package manager hooks to run prescient automatically (Requires Root).
     """
+    check_sudo("install-hooks", strict=True)
     logger.info("Installing package manager hooks.")
     install()
 
@@ -72,6 +78,7 @@ def predict():
     """
     Surgically analyze the incoming update for system and bootloader collisions.
     """
+    check_sudo("predict", strict=False)
     input_data = ""
 
     #if nothing arrives, prescient will not freeze. It will keep going
@@ -114,6 +121,7 @@ def diagnose(
     """
     Analyze system logs from the current boot to identify critical failures.
     """
+    check_sudo("diagnose", strict=False)
     logger.info("User initiated post-crash diagnostics.")
     console.print("\n[bold cyan]~~~ Prescient Post-Crash Diagnostics ~~~[/bold cyan]")
     culprits = run_diagnostics()
@@ -172,15 +180,8 @@ def undo():
     """
     Instantly revert the system to the last prescient-created snapshot.
     """
+    check_sudo("undo", strict=True)
     logger.info("User requested atomic rollback (undo)")
-
-    # Root check
-    if os.geteuid() != 0:
-        logger.error("Undo failed: Root privileges required.")
-        console.print("\n[bold red]Error: Restoring a root filesystem requires root privileges.[/bold red]")
-        console.print("Try running: [bold yellow]sudo prescient undo[/bold yellow]\n")
-        sys.exit(1)
-
     console.print("\n[bold cyan]~~~ Prescient Recovery Engine ~~~[/bold cyan]")
 
     # State check
@@ -239,6 +240,7 @@ def heal():
     """
     Transparently propose and execute fixes for crashed services based on log diagnostics.
     """
+    check_sudo("heal", strict=True)
     logger.info("User initiated Auto-Heal sequence.")
     console.print("\n[bold cyan]~~~ Prescient Diagnostics & Auto-Heal ~~~[/bold cyan]")
 
@@ -250,14 +252,8 @@ def update():
     """
     Securely pull and install the latest OTA update directly from GitHub.
     """
-    logger.info("User initiated secure OTA update.")
-
-    if os.geteuid() != 0:
-        logger.error("Update failed: Root privileges required.")
-        console.print("\n[bold red]Error: Updating system-wide binaries requires root.[/bold red]")
-        console.print("Try running: [bold yellow]sudo prescient update[/bold yellow]\n")
-        sys.exit(1)
-    
+    check_sudo("update", strict=True)
+    logger.info("User initiated secure OTA update.")    
     console.print("[bold cyan]Verifying system state and fetching latest updates...[/bold cyan]")
 
     sudo_user = os.environ.get("SUDO_USER")
@@ -312,19 +308,12 @@ def uninstall():
     """
     Complete self-destruct sequence. Removes all hooks, logs, binaries, and source files.
     """
+    check_sudo("uninstall", strict=True)
     logger.info("User initiated self-destruct sequence (uninstall).")
-
-    # Root check
-    if os.geteuid()!= 0:
-        logger.error("Uninstall failed: Root privileges required.")
-        console.print("\n[bold red]Error: Complete removal requires system-level privileges.[/bold red]")
-        console.print("Try running: [bold yellow]sudo prescient uninstall[/bold yellow]\n")
-        sys.exit(1)
-
     console.print("\n[bold red]!!! INITIATING PRESCIENT SELF-DESTRUCT !!![/bold red]")
     console.print("[white]This will permanently remove all hooks, logs, configs, and source files.[/white]")
 
-    # Conformation
+    # Confirmation
     confirm = typer.confirm("Are you sure you want to purge prescient from this system?")
     if not confirm:
         logger.info("Uninstall aborted by user.")
