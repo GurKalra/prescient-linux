@@ -49,6 +49,17 @@ def _format_relative_time(timestamp: float) -> str:
     return f"{int(diff // 86400)} days ago"
 
 @app.command()
+def tui():
+    """
+    Launch the interactive Prescient Terminal UI.
+    """
+    logger.info("Initializing Prescient TUI...")
+
+    from prescient.tui.app import PrescientTUI
+    ui = PrescientTUI()
+    ui.run()
+
+@app.command()
 def install_hooks():
     """
     Install package manager hooks to run prescient automatically (Requires Root).
