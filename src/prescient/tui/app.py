@@ -84,12 +84,11 @@ class MainDashboard(Container):
                 with Vertical(id="content-area"):
                     yield Markdown("Select a command from the left to view its documentation.", id="doc-viewer")
     
-    async def _on_mount(self) -> None:
+    async def on_mount(self) -> None:
         self.app.run_update_check()
 
 class InstallScreen(Container):
     def compose(self) -> ComposeResult:
-        yield DuneWave(id="install-wave")
         with Vertical(id="install-content"):
             yield Static(ASCII_LOGO, id="install-title")
             yield Static("System hooks are not yet installed.", classes="install-text")
@@ -140,9 +139,9 @@ class PrescientTUI(App):
     #health-status { dock: bottom; border-top: solid $primary-darken-2; padding: 1 0 0 1; height: 4; }
 
     #right-pane { width: 1fr; height: 100%; }
-    #update-banner { height: 8; border-bottom: solid $primary-darken-2; padding: 0 2; }
-    #update-text { width: 1fr; content-align: center middle; text-align: center; color: $success; text-style: bold; }
-    #main-wave { width: 1fr; height: 8; }
+    #update-banner { height: 8; border-bottom: solid $primary-darken-2; padding: 0 2; align: center middle; }
+    #update-text { width: 1fr; height: 8; content-align: center middle; text-align: center; color: $success; text-style: bold; }
+    #main-wave { width: 1fr; height: 8; dock: right;}
 
     #content-area { height: 1fr; padding: 1 3; }
     #doc-viewer { height: 1fr; overflow-y: auto; }
@@ -158,9 +157,8 @@ class PrescientTUI(App):
 
     /* Install Screen Aesthetics */
     #install-content { height: 1fr; align: center middle; }
-    #install-wave-top { height: 8; width: 100%; dock: top; }
-    #install-wave-bottom { height: 8; width: 100%; dock: bottom; }
-    #install-title { width: 45; margin-bottom: 2; }
+    #install-wave-bottom { height: 9; width: 100%; dock: bottom; }
+    #install-title { width: 100%; text-align:center; margin-bottom: 2; }
     .install-text { text-align: center; margin-bottom: 2; }
     .dim-text { color: $text-muted; text-align: center; margin-top: 2; }
     """
