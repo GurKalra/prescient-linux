@@ -44,7 +44,7 @@ def main(ctx: typer.Context):
     Global hook that runs before commands to check for OTA updates.
     """
     if ctx.invoked_subcommand not in ["predict", "update", "uninstall", "install-hooks", "tui"]:
-        if check_for_updates():
+        if check_for_updates(force_network=True):
             console.print("[bold yellow]!A new version of Prescient is available![/bold yellow]")
             console.print("[dim]Run `sudo prescient update` to install it securely.[/dim]\n")
 
@@ -127,6 +127,9 @@ def predict():
 
     logger.info("Audit complete. Proceeding with installation.")    
     console.print("\n[bold green]Prescient Audit Complete. Proceeding with transaction...[/bold green]")
+
+    if CONFIG.get("update", {}).get("is_available", False):
+        console.print("[dim]ℹ A new Prescient update is available. Run 'sudo prescient update'[/dim]")
 
 @app.command()
 def diagnose(
@@ -274,7 +277,7 @@ def update(
 
     # Checking for an actual update before pulling
     if not force:
-        if not check_for_updates():
+        if not check_for_updates(force_network=True):
             console.print("[bold green]System is already up to date. No new OTA releases found.[/bold green]")
             console.print("[dim](Use 'sudo prescient update --force' to reinstall anyway)[/dim]\n")
             logger.info("OTA update skipped: System is already at the latest version.")

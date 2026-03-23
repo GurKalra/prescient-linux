@@ -180,7 +180,7 @@ class PrescientTUI(App):
     
     @work(thread=True)
     def run_update_check(self) -> None:
-        if check_for_updates():
+        if check_for_updates(force_network=True):
             logger.info("TUI update check: new version available.")
             self.call_from_thread(self._show_update_banner)
     
@@ -188,7 +188,7 @@ class PrescientTUI(App):
         try:
             banner_text = self.query_one("#update-text", Static)
             banner_text.update(
-                "[bold #fabd2f]New Prescient version available![/bold #fabd2f]\nPress 'u' to jump to 'update'."
+                "[bold #fabd2f]New Prescient version available![/bold #fabd2f]\nPress 'u' to jump to 'update' and run the command."
             )
             banner_text.display = True
         except Exception as e:

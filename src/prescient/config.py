@@ -115,4 +115,40 @@ def save_auto_snapshot_config(enabled: bool) -> bool:
         logger.error(f"Failed to save snapshot config: {e}")
         return False
 
+def save_update_cache(last_checked: float, is_available: bool) -> bool:
+    """
+    Saves the timestamp and result of the last OTA update check.
+    """
+    path = get_active_config_path()
+
+    if not path:
+        path = PROJECT_ROOT / "prescient.toml"
+        if not path.exists():
+            path.touch()
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            doc = tomlkit.parse(content) if content else tomlkit.document()
+
+        # Adding update table in toml file
+        if "update" not in doc:
+            doc.add("update", tomlkit.table())
+        
+        doc["update"]["last_checked"] = last_checked
+        doc["update"]["is_available"] = is_available
+
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(tomlkit.dumps(doc))
+        
+        if os.geteuid() == 0:
+            os.chmod(path, 0o644)
+        
+        reload_config()
+        return True
+    except Exception as e:
+        logger.error(f"Failed to save update cache: {e}")
+        return False
+
+
 reload_config()
