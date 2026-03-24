@@ -17,12 +17,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 # Command Config
 COMMAND_REGISTRY = {
-    "predict": "docs/predict.md",
-    "diagnose": "docs/diagnose.md",
-    "heal": "docs/heal.md",
-    "undo": "docs/undo.md",
-    "update": "docs/update.md",
-    "uninstall": "docs/uninstall.md",
+    "tui": "docs/commands/tui.md",
+    "install-hooks": "docs/commands/install-hooks.md",
+    "predict": "docs/commands/predict.md",
+    "diagnose": "docs/commands/diagnose.md",
+    "undo": "docs/commands/undo.md",
+    "heal": "docs/commands/heal.md",
+    "update": "docs/commands/update.md",
+    "uninstall": "docs/commands/uninstall.md",
+    "rescue": "docs/commands/rescue.md",
 }
 
 ASCII_LOGO = r"""[bold #8ec07c]
@@ -67,12 +70,15 @@ class MainDashboard(Container):
             with Vertical(id="sidebar"):
                 yield Static("COMMANDS", classes="sidebar-title")
                 yield ListView(
+                    ListItem(Label("> tui"), id="cmd-tui"),
+                    ListItem(Label("> install-hooks"), id="cmd-install-hooks"),
                     ListItem(Label("> predict"), id="cmd-predict"),
                     ListItem(Label("> diagnose"), id="cmd-diagnose"),
                     ListItem(Label("> undo"), id="cmd-undo"),
                     ListItem(Label("> heal"), id="cmd-heal"),
                     ListItem(Label("> update"), id="cmd-update"),
                     ListItem(Label("> uninstall"), id="cmd-uninstall"),
+                    ListItem(Label("> rescue"), id="cmd-rescue"),
                     id="command-list"
                 )
                 yield Static(get_last_health_status(), id="health-status")
@@ -89,6 +95,12 @@ class MainDashboard(Container):
         self.app.run_update_check()
 
 class InstallScreen(Container):
+    can_focus = True
+
+    BINDINGS = [
+        ("enter", "install-hooks", "Install"),
+    ]
+
     def compose(self) -> ComposeResult:
         with Vertical(id="install-content"):
             yield Static(ASCII_LOGO, id="install-title")
@@ -97,7 +109,58 @@ class InstallScreen(Container):
             yield Static("", id="install-status", classes="dim-text")
         yield DuneWave(id="install-wave-bottom")
 
+    def on_mount(self) -> None:
+        self.focus()
+    
+    def action_install_hooks(self) -> None:
+        """
+        Securely handles the Enter keypress to install hooks.
+        """
+        try:
+            status_text = self.query_one("#install-status", Static)
+        except Exception:
+            return
+        
+        logger.info("User initiated hook installation via Enter key.")
+
+        try:
+            status_text.update("[dim #8ec07c]Installing hooks... do not close terminal[/dim #8ec07c]")
+        except Exception:
+            pass
+        
+        success = False
+        with self.app.suspend():
+            print("\n[Prescient] Installing system hooks. You may be prompted for your password...")
+            try:
+                subprocess.run(
+                    ["sudo", "prescient", "install-hooks"],
+                    check=True
+                )
+                print("\n[Prescient] Hooks successfully installed!")
+                time.sleep(1.3)
+                success=True
+            except subprocess.CalledProcessError as e:
+                print(f"\n[Prescient] Hook installation failed (exit code {e.returncode}).")
+                input("\nPress Enter to return to the TUI...")
+        if success:
+            logger.info("Hot-swapping to ConfigScreen after successful install.")
+            self.remove()
+            self.mount(ConfigScreen(id="config-screen"), before = self.query_one(Footer))
+        else:
+            try:
+                status_text.update("[#fb4934]Installation failed. Check prescient.log[/#fb4934]")
+            except Exception:
+                pass
+        
+
 class ConfigScreen(Container):
+    can_focus = True
+
+    BINDINGS = [
+        ("y", "enable_snapshots", "Yes"),
+        ("n", "disable_snapshots", "No"),
+    ]
+
     def compose(self) -> ComposeResult:
         with Vertical(id="install-content"):
             yield Static("[bold #8ec07c]SNAPSHOT CONFIGURATION[/bold #8ec07c]", id="install-title")
@@ -105,6 +168,17 @@ class ConfigScreen(Container):
             yield Static("Press [bold #b8bb26]y[/bold #b8bb26] for Yes, or [bold #fb4934]n[/bold #fb4934] for No", classes="dim-text")
             yield Static("", id="config-status", classes="dim-text")
         yield DuneWave(id="install-wave-bottom")
+
+    def on_mount(self) -> None:
+        self.focus()
+    
+    def action_enable_snapshots(self) -> None:
+        save_auto_snapshot_config(True)
+        self.app._finalize_onboarding()
+    
+    def action_disable_snapshots(self) -> None:
+        save_auto_snapshot_config(False)
+        self.app._finalize_onboarding()
 
 # Main App
 class PrescientTUI(App):
@@ -118,9 +192,6 @@ class PrescientTUI(App):
         ("r", "refresh_health", "Refresh"),
         ("u", "open_update", "Update"),
         ("?", "show_help", "Help"),
-        ("enter", "install_hooks", "Install"),
-        ("y", "enable_snapshots", "Yes"),
-        ("n", "disable_snapshots", "No"),
     ]
 
     CSS = """
@@ -205,56 +276,6 @@ class PrescientTUI(App):
         yield Footer()
 
     # ACTION HANDLERS
-    def action_install_hooks(self) -> None:
-        """
-        Securely handles the Enter keypress to install hooks.
-        """
-        try:
-            status_text = self.query_one("#install-status", Static)
-        except Exception:
-            return
-        
-        logger.info("User initiated hook installation via Enter key.")
-
-        try:
-            status_text.update("[dim #8ec07c]Installing hooks... do not close terminal[/dim #8ec07c]")
-        except Exception:
-            pass
-        
-        success = False
-        with self.suspend():
-            print("\n[Prescient] Installing system hooks. You may be prompted for your password...")
-            try:
-                subprocess.run(
-                    ["sudo", "prescient", "install-hooks"],
-                    check=True
-                )
-                print("\n[Prescient] Hooks successfully installed!")
-                time.sleep(1.3)
-                success=True
-            except subprocess.CalledProcessError as e:
-                print(f"\n[Prescient] Hook installation failed (exit code {e.returncode}).")
-                input("\nPress Enter to return to the TUI...")
-        if success:
-            logger.info("Hot-swapping to ConfigScreen after successful install.")
-            self.query_one("#install-screen").remove()
-            self.mount(ConfigScreen(id="config-screen"), before = self.query_one(Footer))
-        else:
-            try:
-                status_text.update("[#fb4934]Installation failed. Check prescient.log[/#fb4934]")
-            except Exception:
-                pass
-    
-    def action_enable_snapshots(self) -> None:
-        if self.query("#config-screen"):
-            save_auto_snapshot_config(True)
-            self._finalize_onboarding()
-    
-    def action_disable_snapshots(self) -> None:
-        if self.query("#config-screen"):
-            save_auto_snapshot_config(False)
-            self._finalize_onboarding()
-
     def _finalize_onboarding(self) -> None:
         logger.info("Onboarding complete. Booting MainDashboard.")
         self.query_one("#config-screen").remove()

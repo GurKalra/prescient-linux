@@ -124,7 +124,7 @@ def run_autoheal_sequence(culprits: list):
                 )
                 console.print(f"    [bold green]Success:[/bold green] {cmd}")
             except subprocess.CalledProcessError as e:
-                console.print(f"    [bold red]✗ Failed:[/bold red] {cmd}")
+                console.print(f"    [bold red]Failed:[/bold red] {cmd}")
                 error_out = e.stderr.strip() if e.stderr else e.stdout.strip()
                 logger.error(f"Autoheal failed on '{cmd}': {error_out}")
                 console.print(f"      [dim red]Error details: {error_out}[/dim red]")

@@ -186,8 +186,8 @@ def diagnose(
                 os.chmod(fallback_path, 0o600)
 
                 console.print("[bold red]Network upload failed (Are you offline?).[/bold red]")
-                console.print(f"[bold yellow]✓ Saved crash report locally instead: {fallback_path}[/bold yellow]\n")
-                console.print(f"[dim]You can read it with: cat {fallback_path}[/dim]\n")
+                console.print(f"[bold yellow]Saved crash report locally instead: {fallback_path}[/bold yellow]\n")
+                console.print(f"[dim]You can read it with: sudo cat {fallback_path}[/dim]\n")
             except Exception as e:
                 logger.error(f"Failed to save local offline crash report: {e}")
                 console.print(f"[bold red]Failed to save local report: {e}[/bold red]\n")

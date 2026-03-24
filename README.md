@@ -71,79 +71,27 @@ curl -sSL https://raw.githubusercontent.com/GurKalra/prescient-linux/main/instal
 
 ## Usage
 
-Once the hooks are installed, prescient runs automatically in the background whenever you use your package manager (e.g., `sudo apt upgrade`). However, you can still use the native Linux commands manually:
+Once the hooks are installed, Prescient runs automatically in the background whenever you use your package manager (e.g., `sudo apt upgrade`).
 
-- To install the background package manager hooks (Require root):
+For manual interaction, recovery, and diagnostics, Prescient provides a suite of CLI commands. Click any command to read its full documentation:
 
-```bash
-sudo prescient install-hooks
-```
-
-- To see the help menu and avaliable commands:
-
-```bash
-prescient --help
-```
-
-- To open the visual system dashboard and documentation hub:
-
-```bash
-prescient tui
-```
-
-- To run a system update simulatoin and risk analysis:
-
-```bash
-prescient predict
-```
-
-- To diagnose critical system logs from the current boot:
-
-```bash
-prescient diagnose
-```
-
-- To export diagnostic logs to a public URL for remote support:
-
-```bash
-prescient diagnose --share
-```
-
-- To safely rollback the system to the last pre-update snapshot (Requires root):
-
-```bash
-sudo prescient undo
-```
-
-- To recover a completely unbootable system from the `(initramfs)` prompt:
-
-```bash
-prescient-rescue
-```
-
-- To transparently auto-recover crashed services based on log diagnostics (Requires root):
-
-```bash
-sudo prescient heal
-```
-
-- To securely pull and install the latest Over-The-Air (OTA) update directly from GitHub (Requires root):
-
-```bash
-sudo prescient update
-```
-
-- To completely remove prescient, its hooks, and all system files (Requires root):
-
-```bash
-sudo prescient uninstall
-```
+| Command                                                     | Description                                                              |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`prescient tui`](docs/commands/tui.md)                     | Open the visual system dashboard and documentation hub                   |
+| [`prescient install-hooks`](docs/commands/install-hooks.md) | Install the background package manager hooks                             |
+| [`prescient predict`](docs/commands/predict.md)             | Run a system update simulation and risk analysis manually                |
+| [`prescient diagnose`](docs/commands/diagnose.md)           | Diagnose critical system logs from the current boot (supports `--share`) |
+| [`prescient heal`](docs/commands/heal.md)                   | Transparently auto-recover crashed services based on log diagnostics     |
+| [`prescient undo`](docs/commands/undo.md)                   | Safely rollback the system to the last pre-update snapshot               |
+| [`prescient-rescue`](docs/commands/rescue.md)               | Recover a completely unbootable system from the `(initramfs)` prompt     |
+| [`prescient update`](docs/commands/update.md)               | Securely pull and install the latest OTA update                          |
+| [`prescient uninstall`](docs/commands/uninstall.md)         | Completely remove Prescient, its hooks, and all system files             |
 
 ---
 
 ## FOSSHack 2026 Roadmap
 
-This project is actively being built for FOSS Hack 2026.
+This project was built for FOSS Hack 2026. All initial roadmap phases have been successfully completed, but the project remains in active development.
 
 - [x] **Phase 0:** CLI Scaffolding and Environment Setup
 - [x] **Phase 1:** Universal Hook Interceptor (`apt` & `pacman` integration)
@@ -157,6 +105,12 @@ This project is actively being built for FOSS Hack 2026.
 - [x] **Phase 9:** TTY Pastebin Exporter (prescient diagnose --share via termbin).
 - [x] **Phase 10:** Network & Mirror Pre-Flight (Checking repo health before APT runs).
 - [x] **Phase 11:** Interactive TUI Control Center (Visual execution, OTA updates, and metrics)
+
+---
+
+## Contributing
+
+Prescient is a FOSS project built for real Linux users. If you want to add new auto-heal playbooks, improve the heuristic engine, or fix bugs, please read the [Contributing Guide](CONTRIBUTING.md) to get your dev environment set up and find open issues to work on!
 
 ---
 
