@@ -25,7 +25,7 @@ This document covers everything you need to get a working dev environment, under
 
 ## Code of Conduct
 
-Be respectful. Prescient is built by and for the Linux community. Constructive criticism is welcome — personal attacks are not. Issues and PRs that are hostile will be closed without comment.
+Be respectful. Prescient is built by and for the Linux community. Constructive criticism is welcome personal attacks are not :(. Issues and PRs that are hostile will be closed without comment.
 
 ---
 
