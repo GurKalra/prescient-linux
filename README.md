@@ -10,6 +10,8 @@
 
 ---
 
+![Prescient Hero Image](./docs/images/hero_image.png)
+
 ## The Problem: Linux Instability Anxiety
 
 Every Linux user knows the anxiety of running `sudo apt upgrade`. Updates silently break kernel modules, NVIDIA driver versions mismatch, and Secure Boot complicates everything. Linux fails predictably, but no one checks the engine before hitting the gas.
