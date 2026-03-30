@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import urllib.request
 from urllib.error import URLError, HTTPError
 import urllib.parse
@@ -10,12 +11,11 @@ from prescient.core.update_checker import get_local_version
 
 console = Console()
 
-def get_active_mirrors() -> set:
+def get_apt_mirrors() -> set:
     """
     Scans APT sources lists to extract unique, active base URLs.
     """
     mirrors = set()
-
     sources_files = ['/etc/apt/sources.list']
     
     sources_d = '/etc/apt/sources.list.d/'
@@ -49,6 +49,50 @@ def get_active_mirrors() -> set:
             logger.warning(f"Permission denied reading {filepath}. Run as root for full audit.")
         
     return mirrors
+
+def get_pacman_mirrors() -> set:
+    """
+    Scans the Arch Linux mirrorlist to extract unique, active base URLs.
+    """
+    mirrors = set()
+    filepath = '/etc/pacman.d/mirrorlist'
+
+    if not os.path.exists(filepath):
+        return mirrors
+
+    # Regex to capture the base URL
+    url_pattern = re.compile(r'^Server\s*=\s*(https?://[^/]+)')
+
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                # Ignore commented out mirrors and empty lines
+                if line.startswith('#') or not line:
+                    continue
+                
+                match = url_pattern.search(line)
+                if match:
+                    base_url = match.group(1)
+                    mirrors.add(base_url)
+    except PermissionError:
+        logger.warning(f"Permission denied reading {filepath}. Run as root for full audit.")
+    except Exception as e:
+        logger.error(f"Error reading pacman mirrors: {e}")
+
+    return mirrors
+
+def get_active_mirrors() -> set:
+    """
+    Detects the active package manager and routes to the correct mirror parser.
+    """
+    if shutil.which("pacman"):
+        return get_pacman_mirrors()
+    elif shutil.which("dpkg"):
+        return get_apt_mirrors()
+    
+    logger.warning("No supported package manager found for mirror auditing.")
+    return set()
 
 def check_single_mirror(url: str, timeout: float = 2.0, version: str = "unknown") -> tuple[str, bool, str]:
     """
