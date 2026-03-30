@@ -1,6 +1,7 @@
 # Prescient
 
 > **Predict. Protect. Recover.**
+
 > An intelligent, CLI-first system guardian that predicts update breakages, protects dependencies, and recovers Linux environments.
 
 ![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
@@ -28,7 +29,7 @@ Prescient does not replace your package manager. It performs deterministic pre-f
 
 - **The Vanguard Engine (`prescient predict`):** _(Live)_ A blazing-fast, RAM-cached (`/dev/shm`) transaction auditor. It evaluates incoming packages in under 200ms, pulling the emergency brake (`raise typer.Exit(code=1)`) if it detects `/boot` partition saturation, a locked `dpkg` state, or a collision between new kernels and unsigned DKMS modules while Secure Boot is active.
 
-- **Universal Pre-Transaction Hooks:** _(Live)_ Native interceptors injected directly into package managers (using `DPkg::Pre-Install-Pkgs` for `apt`, with `pacman` support planned). prescient doesn't need to be run manually—it wakes up automatically at the point of no return.
+- **Universal Pre-Transaction Hooks:** _(Live)_ Native interceptors injected directly into package managers (using `DPkg::Pre-Install-Pkgs` for `apt`, with `pacman` support planned). prescient doesn't need to be run manually - it wakes up automatically at the point of no return.
 
 - **Autonomous Heuristic Engine:** _(Live)_ prescient doesn't just rely on static blacklists. It dynamically queries the package manager to analyze the exact paths an unknown package intends to modify. If a package touches critical tripwires (like `/etc/pam.d` or `/boot`), prescient flags it, learns the threat, and saves it to its configuration memory.
 
@@ -36,17 +37,17 @@ Prescient does not replace your package manager. It performs deterministic pre-f
 
 - **Atomic Local Rollbacks (`prescient undo`):** _(Live)_ Strict, dependency-safe transaction reversals. If an update breaks your system's GUI or networking, drop into a TTY terminal and instantly restore your root filesystem to the exact moment before the crash with an interactive, safety-gated rollback UI.
 
-- **Pattern Interpretation (`prescient diagnose`):** _(Live)_ A post-crash logic engine that parses the `journalctl -p 3 -b -1` errors. It translates cryptic kernel panics from a failed boot into human-readable English and highly specific, actionable terminal commands.
+- **Pattern Interpretation (`prescient diagnose`):** _(Live)_ A post-crash logic engine that parses `journalctl` errors from the current or a previous crashed boot session. It translates cryptic kernel panics and service failures into a ranked, human-readable table and supports a `--previous` flag for recovering crash data after a reboot, and a `--share` flag to export the full report to a public URL for remote debugging.
 
-- **Transparent Auto-Healer (`prescient heal`):** _(Live)_ An interactive execution engine that maps critical `journalctl` failures to known the remediation playbooks. It transparently proposes exact bash fixes for crashed services and waits for user confirmation before safely executing them.
+- **Transparent Auto-Healer (`prescient heal`):** _(Live)_ An interactive execution engine that maps critical `journalctl` failures to known remediation playbooks. It transparently proposes exact bash fixes for crashed services and waits for user confirmation before safely executing them.
 
 - **Initramfs Rescue Hook (`prescient-rescue`):** _(Live)_ A minimal, POSIX-compliant shell hook injected into the initramfs boot stage. This allows for absolute worst-case emergency recovery. If an update completely breaks your boot sequence, you can trigger a raw filesystem rollback directly from the initramfs prompt, bypassing the need for D-Bus or systemd.
 
 - **TTY Pastebin Exporter (`prescient diagnose --share`):** _(Live)_ A frictionless log-sharing mechanism designed for headless or broken GUI states. It securely pipes anonymized crash traces and `journalctl` outputs directly to a CLI-friendly pastebin (`termbin.com`) using native Python sockets (bypassing the need for external tools like `netcat`), generating a short URL for remote debugging. It includes a secured, local offline fallback mechanism if the system's network drivers are completely broken.
 
-- **Network & Mirror Pre-Flight:** _(Live)_ An active, concurrent network health auditor that pings your configured package mirrors (supporting both legacy `.list` and modern DEB822 `.sources`) before a transaction begins. It prevents broken or partial updates caused by dead repository servers or 404 errors, taking milliseconds to run using thread pools, and smartly bypasses itself during local package removals.
+- **Network & Mirror Pre-Flight:** _(Live)_ An active, concurrent network health auditor that pings your configured package mirrors before a transaction begins which is supporting APT legacy `.list` format, modern DEB822 `.sources` format, and Pacman repository configs. It prevents broken or partial updates caused by dead repository servers, taking milliseconds to run using thread pools, and smartly bypasses itself during local package removals.
 
-- **Read-Only TUI Dashboard:** _(Live)_ A premium, Gruvbox-themed Terminal User Interface. It acts as a safe, visual command center. Users can navigate via keyboard to view system health metrics, read dynamic command documentation, monitor OTA update availability, and securely handle first-time system hook installation—all completely isolated from accidental root-level executions.
+- **Read-Only TUI Dashboard:** _(Live)_ A premium, Gruvbox-themed Terminal User Interface. It acts as a safe, visual command center. Users can navigate via keyboard to view system health metrics, read dynamic command documentation, monitor OTA update availability, and securely handle first-time system hook installation and that too all completely isolated from accidental root-level executions.
 
 ## The North Stars of prescient
 
@@ -55,7 +56,7 @@ Prescient Linux is built on four uncompromising principles:
 1. **Low Latency:** Intercepts and audits must take milliseconds. No bloated execution.
 2. **Low False Positives:** Only wake up the heavy probes when the boot-chain or critical services are genuinely threatened.
 3. **Clear Explanations:** Don't just throw errors. Tell the user exactly _why_ it's dangerous and _how_ to fix it.
-4. **Reliability > Feature Count:** A half-broken rollback is worse than no rollback. Every recovery feature must be atomic, safe, and functional—even from a dead, unbootable state.
+4. **Reliability > Feature Count:** A half-broken rollback is worse than no rollback. Every recovery feature must be atomic, safe, and functional i.e. even from a dead, unbootable state.
 
 ---
 
@@ -77,17 +78,17 @@ Once the hooks are installed, Prescient runs automatically in the background whe
 
 For manual interaction, recovery, and diagnostics, Prescient provides a suite of CLI commands. Click any command to read its full documentation:
 
-| Command                                                     | Description                                                              |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------ |
-| [`prescient tui`](docs/commands/tui.md)                     | Open the visual system dashboard and documentation hub                   |
-| [`prescient install-hooks`](docs/commands/install-hooks.md) | Install the background package manager hooks                             |
-| [`prescient predict`](docs/commands/predict.md)             | Run a system update simulation and risk analysis manually                |
-| [`prescient diagnose`](docs/commands/diagnose.md)           | Diagnose critical system logs from the current boot (supports `--share`) |
-| [`prescient heal`](docs/commands/heal.md)                   | Transparently auto-recover crashed services based on log diagnostics     |
-| [`prescient undo`](docs/commands/undo.md)                   | Safely rollback the system to the last pre-update snapshot               |
-| [`prescient-rescue`](docs/commands/rescue.md)               | Recover a completely unbootable system from the `(initramfs)` prompt     |
-| [`prescient update`](docs/commands/update.md)               | Securely pull and install the latest OTA update                          |
-| [`prescient uninstall`](docs/commands/uninstall.md)         | Completely remove Prescient, its hooks, and all system files             |
+| Command                                                     | Description                                                                           |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [`prescient tui`](docs/commands/tui.md)                     | Open the visual system dashboard and documentation hub                                |
+| [`prescient install-hooks`](docs/commands/install-hooks.md) | Install the background package manager hooks                                          |
+| [`prescient predict`](docs/commands/predict.md)             | Run a system update simulation and risk analysis manually                             |
+| [`prescient diagnose`](docs/commands/diagnose.md)           | Diagnose critical system logs (supports `--share` and `--previous` for crashed boots) |
+| [`prescient heal`](docs/commands/heal.md)                   | Transparently auto-recover crashed services based on log diagnostics                  |
+| [`prescient undo`](docs/commands/undo.md)                   | Safely rollback the system to the last pre-update snapshot                            |
+| [`prescient-rescue`](docs/commands/rescue.md)               | Recover a completely unbootable system from the `(initramfs)` prompt                  |
+| [`prescient update`](docs/commands/update.md)               | Securely pull and install the latest OTA update                                       |
+| [`prescient uninstall`](docs/commands/uninstall.md)         | Completely remove Prescient, its hooks, and all system files                          |
 
 ---
 
@@ -102,17 +103,29 @@ This project was built for FOSS Hack 2026. All initial roadmap phases have been 
 - [x] **Phase 4:** The Diagnose Engine (Post-Crash `journalctl` Analysis)
 - [x] **Phase 5:** Extensible Rules Schema (Custom `.toml` triggers for power users)
 - [x] **Phase 6:** Atomic Local Rollback (`prescient undo` via local cache simulation)
-- [x] **Phase 7:** Transparent Auto-Healer (prescient heal with interactive command proposals).
+- [x] **Phase 7:** Transparent Auto-Healer (prescient heal with interactive command proposals)
 - [x] **Phase 8:** Initramfs Rescue Hook (Minimal POSIX shell failsafe for broken boots)
-- [x] **Phase 9:** TTY Pastebin Exporter (prescient diagnose --share via termbin).
-- [x] **Phase 10:** Network & Mirror Pre-Flight (Checking repo health before APT runs).
+- [x] **Phase 9:** TTY Pastebin Exporter (prescient diagnose --share via termbin)
+- [x] **Phase 10:** Network & Mirror Pre-Flight (Checking repo health before APT/Pacman runs)
 - [x] **Phase 11:** Interactive TUI Control Center (Visual execution, OTA updates, and metrics)
+- [ ] **Phase 12:** Pytest Suite Scaffold (Automated regression testing)
 
 ---
 
 ## Contributing
 
-Prescient is a FOSS project built for real Linux users. If you want to add new auto-heal playbooks, improve the heuristic engine, or fix bugs, please read the [Contributing Guide](CONTRIBUTING.md) to get your dev environment set up and find open issues to work on!
+Prescient is a FOSS project built for real Linux users. If you want to add new auto-heal playbooks, improve the heuristic engine, or fix bugs, please read the [Contributing Guide](CONTRIBUTING.md) to get your dev environment set up and find open issues to work on.
+
+### Running Tests
+
+Install the development dependencies and run the test suite:
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ -v
+```
+
+Tests are located in `tests/` and use `pytest` with `pytest-mock` for subprocess isolation. All tests mock external system calls, which is no root access, no real `dpkg`, no network requests are made during the test run.
 
 ---
 

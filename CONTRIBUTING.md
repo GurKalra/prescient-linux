@@ -264,18 +264,6 @@ cat /etc/apt/apt.conf.d/99prescient-guardian
 
 ---
 
-## Areas That Need Help
-
-These are the highest-priority open contributions that would have real impact:
-
-- **`pacman` mirror checker** - `mirror_checker.py` currently only parses APT sources. A parallel implementation for `/etc/pacman.d/mirrorlist` is needed.
-- **Automated test suite** — Even a basic `pytest` suite that mocks `subprocess` calls for the `predict` pipeline would be a huge step forward.
-- **`--previous-boot` flag for `diagnose`** - ([Issue #94](https://github.com/GurKalra/prescient-linux/issues/94)) — Currently `diagnose` only reads `-b 0`. If a user hard-reboots after a crash, the crash logs are in the previous boot and `diagnose` misses them entirely. Adding a `--previous-boot` flag to switch to `journalctl -b -1` is a small, self-contained change with a real impact.
-- **LUKS support in `prescient-rescue`** - The rescue script currently skips encrypted partitions. Adding a `cryptsetup open` prompt before the block device probe would make rescue viable for LUKS users.
-- **Expanded `HEAL_PLAYBOOK`** - ([Issue #93](https://github.com/GurKalra/prescient-linux/issues/93) _(good first issue)_) - `autoheal.py` has a small remediation playbook that currently covers basic networking, display managers, and APT/dpkg locks. We need more mappings: audio subsystems (Pipewire, PulseAudio, ALSA), display servers (X11, Wayland, SDDM, GDM edge cases), and networking daemons (UFW, Firewalld, DNSmasq) etc. Open `src/prescient/intelligence/autoheal.py`, find the `HEAL_PLAYBOOK` dictionary, and add a new key-value pair - or add a new `if "my error" in msg` block inside `determine_fixes()` for message-matched fixes.
-
----
-
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE) that covers this project.

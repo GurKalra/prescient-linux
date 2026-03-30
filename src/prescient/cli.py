@@ -133,15 +133,16 @@ def predict():
 
 @app.command()
 def diagnose(
-    share: bool = typer.Option(False, "--share", help="Export diagnostic logs to termbin.com or save locally.")
+    share: bool = typer.Option(False, "--share", help="Export diagnostic logs to termbin.com or save locally."),
+    previous: bool = typer.Option(False, "--previous", help="Scan logs from the previous crashed boot instead of the current one.")
 ):
     """
     Analyze system logs from the current boot to identify critical failures.
     """
     check_sudo("diagnose", strict=False)
-    logger.info("User initiated post-crash diagnostics.")
+    logger.info(f"User initiated post-crash diagnostics (previous = {previous}).")
     console.print("\n[bold cyan]~~~ Prescient Post-Crash Diagnostics ~~~[/bold cyan]")
-    culprits = run_diagnostics()
+    culprits = run_diagnostics(previous=previous)
 
     if share:
         logger.info("User requested crash report export.")
@@ -155,6 +156,7 @@ def diagnose(
         report_text += f"Generated: {now}\n"
         report_text += f"Kernel: {platform.release()}\n"
         report_text += f"System: {platform.system()} {platform.version()}\n"
+        report_text += f"Boot Target: {'Previous (-1)' if previous else 'Current (0)'}\n"
         report_text += f"{'='*30}\n\n"
 
         report_text += "IDENTIFIED CULPRITS (Failing Subsystems):\n"
@@ -164,8 +166,8 @@ def diagnose(
         else:
             report_text += "- No critical systemd errors found.\n"
         
-        report_text += "\n=== RAW JOURNALCTL LOGS (Last 50) ===\n"
-        report_text += get_raw_journalctl_output(50)
+        report_text += "\n=== RAW JOURNALCTL LOGS (Last 75) ===\n"
+        report_text += get_raw_journalctl_output(75, previous=previous)
 
         # Trying termbin (requires internet)
         console.print("[dim]Attempting to upload to termbin.com...[/dim]")
