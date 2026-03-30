@@ -1,6 +1,6 @@
 # `prescient diagnose`
 
-> The Pattern Interpretation Engine that parses your current boot's error logs and translates cryptic system failures into a ranked, human-readable breakdown of what went wrong and why.
+> The Pattern Interpretation Engine that parses your system's error logs, can be from the current boot or a previous crashed boot and translates cryptic system failures into a ranked, human-readable breakdown of what went wrong and why.
 
 ---
 
@@ -20,24 +20,31 @@ The `--share` flag extends this for **remote debugging** as it packages the full
 # Standard diagnostic scan (no root required on most systems)
 prescient diagnose
 
+# Scan logs from the previous crashed boot (use this if you rebooted after a crash)
+prescient diagnose --previous
+
 # Package and export crash report to termbin.com
 prescient diagnose --share
+
+# Export crash report from the previous boot
+prescient diagnose --previous --share
 ```
 
 ### Options
 
-| Flag‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ | Description                                                                                                                                                                                                                    |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--share`                                 | Builds a full crash report (structured summary + last 50 raw log lines) and uploads it to `termbin.com` via raw TCP socket. Returns a short URL. Falls back to saving locally at `/tmp/prescient_crash_report.txt` if offline. |
+| Flag         | Description                                                                                                                                                                                                                                                                      |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--previous` | Scans logs from the previous boot (`-b -1`) instead of the current one (`-b 0`). Use this if you experienced a hard freeze or kernel panic and had to reboot before running diagnose.                                                                                            |
+| `--share`    | Builds a full crash report (structured summary + last 50 raw log lines) and uploads it to `termbin.com` via raw TCP socket. Returns a short URL. Falls back to saving locally at `/tmp/prescient_crash_report.txt` if offline. Both flags can be combined: `--previous --share`. |
 
-> **!!Tip:** `prescient diagnose` reads only the **current boot** (`-b 0`). If you rebooted after a crash, the logs from the crashed boot are in the previous boot (`-b -1`). Prescient currently targets the current boot (run immediately after a crash before rebooting for best results.)
+> **!!Tip:** Run `prescient diagnose` immediately after a crash before rebooting for best results. If you have already rebooted, use `--previous` to recover the crash data.
 
 ---
 
 ## Prerequisites
 
 - [ ] `systemd` and `journalctl` must be installed (standard on Ubuntu, Debian, Arch, Fedora)
-- [ ] Root is **recommended** for full journal access — some systems restrict journal reads to the `systemd-journal` group
+- [ ] Root is **recommended** for full journal access (some systems restrict journal reads to the `systemd-journal` group)
 - [ ] Network access required for `--share` upload (offline fallback available automatically)
 
 ---
@@ -46,7 +53,7 @@ prescient diagnose --share
 
 ### Standard Run
 
-1. **Log Fetch** - Runs `journalctl -p 3 -b -o json` to pull all errors, criticals, alerts, and emergencies from the current boot as structured JSON. Priority 3 = errors and above (includes 0-3: emergency, alert, critical, error).
+1. **Log Fetch** - Runs `journalctl -p 3 -b <0 or -1> -o json` to pull all errors, criticals, alerts, and emergencies as structured JSON. The boot target is `0` (current) by default, or `-1` (previous) when `--previous` is passed. Priority 3 = errors and above (includes 0-3: emergency, alert, critical, error).
 
 2. **Culprit Grouping** - Each log entry is assigned to a subsystem using a fallback chain.
 
@@ -115,7 +122,7 @@ Report exported successfully!
 Share this URL for support: https://termbin.com/url
 ```
 
-**With `--share` — offline fallback:**
+**With `--share` (offline fallback):**
 
 ```
 Attempting to upload to termbin.com...
@@ -131,7 +138,7 @@ You can read it with: sudo cat /tmp/prescient_crash_report.txt
 
 > Logs uploaded via `--share` are **publicly accessible** on termbin.com. The URL is not secret. Do not use on production servers or systems where service names, hostnames, or error messages may contain sensitive information.
 
-> `diagnose` reads the **current boot only**. If your system crashed and you have already rebooted, the crash logs are in the previous boot. Run `journalctl -p 3 -b -1` manually to inspect the previous boot's errors - prescient currently does not expose a `--previous-boot` flag.
+> `diagnose` targets the **current boot** by default (`-b 0`). If your system crashed and you have already rebooted, use `prescient diagnose --previous` to scan the previous boot's logs (`-b -1`). The `--previous` and `--share` flags can be combined freely.
 
 ---
 
