@@ -211,7 +211,13 @@ subprocess.run(f"systemctl restart {service_name}", shell=True)
 
 ## Testing Your Changes
 
-Prescient has no automated test suite yet. All testing is currently manual. Here is how to test the most critical paths:
+Prescient utilizes a fully-mocked, zero-I/O automated test suite for its core engines (Vanguard and Recovery). **Before submitting a PR, please ensure all automated tests pass.**
+
+For detailed instructions on running `pytest` and our testing architecture, please read **[TESTING.md](TESTING.md)**.
+
+### Manual Testing (Live Environments)
+
+While the core protective engines are covered by `pytest`, interactive features and system-level manipulations still require manual validation. Here is how to test those paths:
 
 **Testing `predict` (the hot path):**
 

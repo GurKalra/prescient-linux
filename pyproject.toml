@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prescient-linux"
-version = "1.1.4"
+version = "1.1.6"
 description = "Predict. Protect. Recover. An intelligent CLI stability layer for Linux."
 readme = "README.md"
 requires-python = ">=3.10"
