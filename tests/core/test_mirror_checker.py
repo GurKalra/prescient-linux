@@ -9,9 +9,6 @@ from prescient.core.mirror_checker import (
 
 @pytest.fixture(autouse=True)
 def silence_logger(mocker):
-    """
-    Automatically mocks the logger for every test in this file.
-    """
     mocker.patch("prescient.core.mirror_checker.logger")
 
 # Ubuntu / Apt paths
