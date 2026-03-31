@@ -43,7 +43,7 @@ def run_diagnostics(previous: bool = False) -> list:
     boot_str = "previous" if previous else "current"
     logger.info(f"Starting diagnostic scan of {boot_str} boot logs.")
     with console.status(f"[bold cyan] prescient is dynamically analyzing {boot_str} boot logs...[/bold cyan]", spinner="bouncingBar"):
-        logs = get_structured_logs(previous=)
+        logs = get_structured_logs(previous=previous)
 
     if not logs:
         logger.info(f"Diagnostic scan clean. No critical errors found in {boot_str} boot.")
