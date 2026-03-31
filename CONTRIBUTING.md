@@ -42,56 +42,74 @@ Be respectful. Prescient is built by and for the Linux community. Constructive c
 ```
 prescient-linux/
 ├── .gitignore
+├── CONTRIBUTING.md                 # Guide for contributing and manual testing
+├── install.sh                      # One-command bootstrap script
 ├── LICENSE
 ├── Makefile                        # Symlink installer (used by install.sh)
-├── README.md
-├── install.sh                      # One-command bootstrap script
 ├── prescient.toml                  # Extensible rules schema (triggers, config, cache)
 ├── pyproject.toml                  # Package metadata and dependencies
+├── README.md                       # Project overview and architecture
+├── TESTING.md                      # Zero-I/O testing philosophy and instructions
 ├── docs/
 │   └── commands/                   # One .md file per CLI command (the TUI reads these)
 │       ├── diagnose.md
 │       ├── heal.md
+│       ├── install-hooks.md
 │       ├── predict.md
+│       ├── rescue.md
+│       ├── tui.md
 │       ├── undo.md
 │       ├── uninstall.md
 │       └── update.md
-└── src/
-    └── prescient/
+├── src/
+│   └── prescient/
+│       ├── __init__.py
+│       ├── cli.py                  # Typer app - all command entry points
+│       ├── config.py               # TOML config loader, saver, and hot-reloader
+│       ├── core/
+│       │   ├── __init__.py
+│       │   ├── cache.py            # RAM-backed session cache (/dev/shm)
+│       │   ├── hooks.py            # install-hooks logic (APT + Pacman + initramfs)
+│       │   ├── logger.py           # Secure file logger (root vs user-space)
+│       │   ├── mirror_checker.py   # Concurrent APT/Pacman mirror health auditor
+│       │   ├── update_checker.py   # OTA version check against GitHub
+│       │   └── utils.py            # Shared utilities (package manager detection)
+│       ├── initramfs/
+│       │   ├── prescient-arch-hook     # Arch mkinitcpio hook
+│       │   ├── prescient-rescue.sh     # POSIX rescue script (embedded in initramfs)
+│       │   └── prescient-ubuntu-hook   # Ubuntu initramfs-tools hook
+│       ├── intelligence/
+│       │   ├── __init__.py
+│       │   ├── autoheal.py         # Remediation playbook and execution engine
+│       │   ├── diagnose.py         # journalctl log parser and culprit ranker
+│       │   ├── heuristic.py        # Dynamic tripwire scanner and threat learner
+│       │   └── network.py          # termbin.com TCP socket exporter
+│       ├── recovery/
+│       │   ├── __init__.py
+│       │   ├── snapshot.py         # Timeshift/Snapper snapshot trigger + state
+│       │   └── undo.py             # Atomic rollback engine
+│       ├── tui/
+│       │   ├── __init__.py
+│       │   ├── app.py              # Textual TUI application and screen logic
+│       │   └── widgets.py          # DuneWave animation widget
+│       └── vanguard/
+│           ├── __init__.py
+│           ├── boot.py             # /boot partition and kernel clutter audits
+│           ├── security.py         # Secure Boot + DKMS collision detection
+│           └── system.py           # Pre-flight checks, blast radius assessment
+└── tests/                          # 100% Mocked Zero-I/O test suite
+    ├── __init__.py
+    ├── core/
+    │   ├── __init__.py
+    │   └── test_mirror_checker.py  # Tests concurrent network health pings
+    ├── recovery/
+    │   ├── __init__.py
+    │   └── test_snapshot.py        # Tests snapshot guardrails and disk space logic
+    └── vanguard/
         ├── __init__.py
-        ├── cli.py                  # Typer app - all command entry points
-        ├── config.py               # TOML config loader, saver, and hot-reloader
-        ├── core/
-        │   ├── __init__.py
-        │   ├── cache.py            # RAM-backed session cache (/dev/shm)
-        │   ├── hooks.py            # install-hooks logic (APT + Pacman + initramfs)
-        │   ├── logger.py           # Secure file logger (root vs user-space)
-        │   ├── mirror_checker.py   # Concurrent APT mirror health auditor
-        │   ├── update_checker.py   # OTA version check against GitHub
-        │   └── utils.py            # Shared utilities (package manager detection)
-        ├── initramfs/
-        │   ├── prescient-arch-hook     # Arch mkinitcpio hook
-        │   ├── prescient-rescue.sh     # POSIX rescue script (embedded in initramfs)
-        │   └── prescient-ubuntu-hook   # Ubuntu initramfs-tools hook
-        ├── intelligence/
-        │   ├── __init__.py
-        │   ├── autoheal.py         # Remediation playbook and execution engine
-        │   ├── diagnose.py         # journalctl log parser and culprit ranker
-        │   ├── heuristic.py        # Dynamic tripwire scanner and threat learner
-        │   └── network.py          # termbin.com TCP socket exporter
-        ├── recovery/
-        │   ├── __init__.py
-        │   ├── snapshot.py         # Timeshift/Snapper snapshot trigger + state
-        │   └── undo.py             # Atomic rollback engine
-        ├── tui/
-        │   ├── __init__.py
-        │   ├── app.py              # Textual TUI application and screen logic
-        │   └── widgets.py          # DuneWave animation widget
-        └── vanguard/
-            ├── __init__.py
-            ├── boot.py             # /boot partition and kernel clutter audits
-            ├── security.py         # Secure Boot + DKMS collision detection
-            └── system.py           # Pre-flight checks, blast radius assessment
+        ├── test_boot.py            # Tests /boot space saturation logic
+        ├── test_security.py        # Tests DKMS and Secure Boot VETO matrices
+        └── test_system.py          # Tests pre-flight system state constraints
 ```
 
 ---
@@ -211,13 +229,7 @@ subprocess.run(f"systemctl restart {service_name}", shell=True)
 
 ## Testing Your Changes
 
-Prescient utilizes a fully-mocked, zero-I/O automated test suite for its core engines (Vanguard and Recovery). **Before submitting a PR, please ensure all automated tests pass.**
-
-For detailed instructions on running `pytest` and our testing architecture, please read **[TESTING.md](TESTING.md)**.
-
-### Manual Testing (Live Environments)
-
-While the core protective engines are covered by `pytest`, interactive features and system-level manipulations still require manual validation. Here is how to test those paths:
+Prescient has no automated test suite yet. All testing is currently manual. Here is how to test the most critical paths:
 
 **Testing `predict` (the hot path):**
 
@@ -267,6 +279,18 @@ cat /etc/apt/apt.conf.d/99prescient-guardian
 ```
 
 > Always test destructive operations (`undo`, `uninstall`, hook installation) inside a **virtual machine** first. A VM snapshot before testing is strongly recommended.
+
+---
+
+## Areas That Need Help
+
+These are the highest-priority open contributions that would have real impact:
+
+- **`pacman` mirror checker** - `mirror_checker.py` currently only parses APT sources. A parallel implementation for `/etc/pacman.d/mirrorlist` is needed.
+- **Automated test suite** — Even a basic `pytest` suite that mocks `subprocess` calls for the `predict` pipeline would be a huge step forward.
+- **`--previous-boot` flag for `diagnose`** - ([Issue #94](https://github.com/GurKalra/prescient-linux/issues/94)) — Currently `diagnose` only reads `-b 0`. If a user hard-reboots after a crash, the crash logs are in the previous boot and `diagnose` misses them entirely. Adding a `--previous-boot` flag to switch to `journalctl -b -1` is a small, self-contained change with a real impact.
+- **LUKS support in `prescient-rescue`** - The rescue script currently skips encrypted partitions. Adding a `cryptsetup open` prompt before the block device probe would make rescue viable for LUKS users.
+- **Expanded `HEAL_PLAYBOOK`** - ([Issue #93](https://github.com/GurKalra/prescient-linux/issues/93) _(good first issue)_) - `autoheal.py` has a small remediation playbook that currently covers basic networking, display managers, and APT/dpkg locks. We need more mappings: audio subsystems (Pipewire, PulseAudio, ALSA), display servers (X11, Wayland, SDDM, GDM edge cases), and networking daemons (UFW, Firewalld, DNSmasq) etc. Open `src/prescient/intelligence/autoheal.py`, find the `HEAL_PLAYBOOK` dictionary, and add a new key-value pair - or add a new `if "my error" in msg` block inside `determine_fixes()` for message-matched fixes.
 
 ---
 
