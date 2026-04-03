@@ -4,6 +4,9 @@ echo "=========================================="
 echo "    PRESCIENT EMERGENCY RESCUE SYSTEM     "
 echo "=========================================="
 
+# Making IS_LUKS globally for trap
+IS_LUKS=0
+
 # Cleanup trap to prevent lockups
 cleanup() {
     echo  "[*] Cleaning up virtual mounts..."
@@ -14,7 +17,15 @@ cleanup() {
     umount /root/tmp     2>/dev/null
     umount /root/proc    2>/dev/null
     umount /root/sys     2>/dev/null
-    echo "[+] Cleanup complete."
+
+    umount /root 2>/dev/null
+
+    if [ "$IS_LUKS" -eq 1 ]; then
+        echo "[*] Locking encrypted volume..."
+        cryptsetup luksClose prescient_root 2>/dev/null
+        echo "[+] LUKS volume locked."
+    fi
+    echo "[+] Cleanup Complete."
 }
 trap cleanup EXIT
 
@@ -25,25 +36,64 @@ if [ ! -d "/root/etc" ]; then
 
     for part in /dev/sd* /dev/vd* /dev/nvme* /dev/mapper/*; do
         [ -b "$part" ] || continue
+
+        # Detecting LUKS
+        FSTYPE=$(blkid -s TYPE -o value "$part")
+        TARGET_DEV="$part"
+        CURRENT_IS_LUKS=0
+
+        if [ "$FSTYPE" = "crypto_LUKS" ]; then
+            echo "[!] LUKS Encrypted Volume detected on $part"
+
+            # Decrypting
+            ATTEMPTS=0
+            DECRYPTED=0
+            while [ $ATTEMPTS -lt 3 ]; do
+                if cryptsetup luksOpen "$part" prescient_root; then
+                    DECRYPTED=1
+                    break
+                fi
+                ATTEMPTS=$((ATTEMPTS + 1))
+                if [ $ATTEMPTS -lt 3 ]; then
+                    echo "[-] Attempt $ATTEMPTS/3 failed. Try again."
+                fi
+            done
+
+            if [ "$DECRYPTED" -eq 0 ]; then
+                echo "[-] [ERROR] Decryption failed for $part after 3 attempts. Skipping..."
+                continue
+            fi
+
+            echo "[OK] Drive decrypted successfully."
+            TARGET_DEV="/dev/mapper/prescient_root"
+            CURRENT_IS_LUKS=1
+        fi
+
         # EXT4/XFS
-        mount -o ro "$part" /mnt >/dev/null 2>&1
+        mount -o ro "$TARGET_DEV" /mnt >/dev/null 2>&1
         if [ -f "/mnt/etc/os-release" ]; then
-            echo "[+] Found Root Partition at $part"
+            echo "[+] Found Root Partition at $TARGET_DEV"
             umount /mnt
-            mount "$part" /root
+            mount "$TARGET_DEV" /root
+            IS_LUKS=$CURRENT_IS_LUKS
             break
         fi
         umount /mnt >/dev/null 2>&1
 
         # BTRFS subvolumes
-        mount -o ro,subvol=@ "$part" /mnt >/dev/null 2>&1
+        mount -o ro,subvol=@ "$TARGET_DEV" /mnt >/dev/null 2>&1
         if [ -f "/mnt/etc/os-release" ]; then
-            echo "[+] Found BTRFS Root Subvolume at $part"
+            echo "[+] Found BTRFS Root Subvolume at $TARGET_DEV"
             umount /mnt
-            mount -o subvol=@ "$part" /root
+            mount -o subvol=@ "$TARGET_DEV" /root
+            IS_LUKS=$CURRENT_IS_LUKS
             break
         fi
         umount /mnt >/dev/null 2>&1
+
+        if [ "$CURRENT_IS_LUKS" -eq 1 ]; then
+            cryptsetup luksClose prescient_root 2>/dev/null
+        fi
     done
 fi
 
@@ -81,7 +131,7 @@ if [ -d "/root/etc" ];then
     fi
 
     # Snapper filesystem reading
-    if [ -d "root/.snapshots" ]; then
+    if [ -d "/root/.snapshots" ]; then
         echo "[*] Snapper directory detected. Checking BTRFS subvolumes..."
         ROOT_DEV=$(awk '$2 == "/root" {print $1}' /proc/mounts)
         if [ -n "$ROOT_DEV" ]; then
