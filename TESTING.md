@@ -207,7 +207,7 @@ Validates the concurrent mirror pre-flight auditor. All file reads use `mock_ope
 
 Phase 1 covers the protective engines. The following modules are targeted for comprehensive testing after the hackathon:
 
-- [ ] **`tests/intelligence/test_diagnose.py`** - Mock raw `journalctl` JSON output to validate culprit grouping, the fallback identifier chain (`SYSLOG_IDENTIFIER` → `_SYSTEMD_UNIT` → `_COMM`), and the top-5 table truncation.
+- [x] **`tests/intelligence/test_diagnose.py`** - Mock raw `journalctl` JSON output to validate culprit grouping, the fallback identifier chain (`SYSLOG_IDENTIFIER` → `_SYSTEMD_UNIT` → `_COMM`), and the top-5 table truncation.
 - [ ] **`tests/intelligence/test_autoheal.py`** - Validate the `determine_fixes` decision tree: message-pattern matching (lock files, unmet dependencies), direct playbook lookup, systemd message scan, and the generic service restart fallback. Confirm no `shell=True` is present in any proposed command.
 - [ ] **`tests/recovery/test_undo.py`** - Validate the full rollback safety gate: state file missing → filesystem fallback → CLI verification → filesystem verification → confirmation prompt → `execute_rollback`. Mock both `snapper rollback` and `timeshift --restore` success and failure paths, including the 300-second timeout.
 - [ ] **`tests/core/test_cache.py`** - Validate the `/dev/shm` RAM cache TTL logic: fresh cache returns stored value, expired cache (>30 minutes) returns empty, corrupt JSON falls back gracefully, and `0o600` permissions are applied on write.
