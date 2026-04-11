@@ -99,12 +99,20 @@ prescient-linux/
 │           └── system.py           # Pre-flight checks, blast radius assessment
 └── tests/                          # 100% Mocked Zero-I/O test suite
     ├── __init__.py
+    ├── test_cli.py                 # Tests all CLI commands via CliRunner
     ├── core/
     │   ├── __init__.py
-    │   └── test_mirror_checker.py  # Tests concurrent network health pings
+    │   ├── test_cache.py           # Tests /dev/shm RAM cache TTL and permissions
+    │   ├── test_mirror_checker.py  # Tests concurrent mirror health auditor
+    │   └── test_update_checker.py  # Tests OTA version check and 24-hour cache
+    ├── intelligence/
+    │   ├── __init__.py
+    │   ├── test_autoheal.py        # Tests auto-heal decision tree and execution
+    │   └── test_diagnose.py        # Tests journalctl log parsing and culprit grouping
     ├── recovery/
     │   ├── __init__.py
-    │   └── test_snapshot.py        # Tests snapshot guardrails and disk space logic
+    │   ├── test_snapshot.py        # Tests snapshot guardrails and disk space logic
+    │   └── test_undo.py            # Tests rollback state, verification, and execution
     └── vanguard/
         ├── __init__.py
         ├── test_boot.py            # Tests /boot space saturation logic
@@ -229,68 +237,24 @@ subprocess.run(f"systemctl restart {service_name}", shell=True)
 
 ## Testing Your Changes
 
-Prescient has no automated test suite yet. All testing is currently manual. Here is how to test the most critical paths:
-
-**Testing `predict` (the hot path):**
+Prescient has a fully-mocked, zero-I/O automated test suite built with `pytest` and `pytest-mock`. Run it before submitting any PR:
 
 ```bash
-# Simulate an APT hook call with a fake package list
-echo -e "VERSION 3\n\n/var/cache/apt/archives/linux-image-6.8.0-45-generic_6.8.0-45.45_amd64.deb" | sudo prescient predict
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run the full suite
+pytest tests/ -v
+
+# Run a specific module
+pytest tests/vanguard/test_security.py -v
+
+# Run a single test by name
+pytest tests/vanguard/test_boot.py::test_analyze_boot_health_veto_on_low_boot_space -v
 ```
 
-**Testing `diagnose`:**
-
-```bash
-# Run on any system - reads the live journal
-prescient diagnose
-
-# Test the share flag (requires internet)
-prescient diagnose --share
-```
-
-**Testing `heal`:**
-
-```bash
-# Best tested on a VM where you can intentionally stop a service first
-sudo systemctl stop NetworkManager
-sudo prescient heal
-```
-
-**Testing `undo`:**
-
-```bash
-# Requires timeshift or snapper to be installed and a snapshot to exist
-sudo prescient undo
-```
-
-**Testing the TUI:**
-
-```bash
-# Run without hooks installed to see the onboarding screen
-prescient tui
-```
-
-**Testing hook installation (use a VM):**
-
-```bash
-sudo prescient install-hooks
-# Then verify the hook file exists:
-cat /etc/apt/apt.conf.d/99prescient-guardian
-```
-
-> Always test destructive operations (`undo`, `uninstall`, hook installation) inside a **virtual machine** first. A VM snapshot before testing is strongly recommended.
-
----
-
-## Areas That Need Help
-
-These are the highest-priority open contributions that would have real impact:
-
-- **`pacman` mirror checker** - `mirror_checker.py` currently only parses APT sources. A parallel implementation for `/etc/pacman.d/mirrorlist` is needed.
-- **Automated test suite** — Even a basic `pytest` suite that mocks `subprocess` calls for the `predict` pipeline would be a huge step forward.
-- **`--previous-boot` flag for `diagnose`** - ([Issue #94](https://github.com/GurKalra/prescient-linux/issues/94)) — Currently `diagnose` only reads `-b 0`. If a user hard-reboots after a crash, the crash logs are in the previous boot and `diagnose` misses them entirely. Adding a `--previous-boot` flag to switch to `journalctl -b -1` is a small, self-contained change with a real impact.
-- **LUKS support in `prescient-rescue`** - The rescue script currently skips encrypted partitions. Adding a `cryptsetup open` prompt before the block device probe would make rescue viable for LUKS users.
-- **Expanded `HEAL_PLAYBOOK`** - ([Issue #93](https://github.com/GurKalra/prescient-linux/issues/93) _(good first issue)_) - `autoheal.py` has a small remediation playbook that currently covers basic networking, display managers, and APT/dpkg locks. We need more mappings: audio subsystems (Pipewire, PulseAudio, ALSA), display servers (X11, Wayland, SDDM, GDM edge cases), and networking daemons (UFW, Firewalld, DNSmasq) etc. Open `src/prescient/intelligence/autoheal.py`, find the `HEAL_PLAYBOOK` dictionary, and add a new key-value pair - or add a new `if "my error" in msg` block inside `determine_fixes()` for message-matched fixes.
+No root access is required. No real subprocesses, filesystem writes, or network calls are made during the test run. For the full testing philosophy, mock strategy, zero-I/O guarantees.
+How to write new tests that meet the project's standards, see the [Testing Guide](TESTING.md).
 
 ---
 

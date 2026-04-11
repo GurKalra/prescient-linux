@@ -11,14 +11,14 @@ def get_cached_state():
     if not CACHE_FILE.exists():
         return {}
 
-        try:
-            # Only trust if the cache is not expired
-            if(time.time() - CACHE_FILE.stat().st_mtime) < CACHE_TTL_SECONDS:
-                return json.loads(CACHE_FILE.read_text())
-        except Exception:
-            #if JSON is unreadable for some reason, fall back 
-            pass
-        return {}
+    try:
+        # Only trust if the cache is not expired
+        if(time.time() - CACHE_FILE.stat().st_mtime) < CACHE_TTL_SECONDS:
+            return json.loads(CACHE_FILE.read_text())
+    except Exception:
+        #if JSON is unreadable for some reason, fall back 
+        pass
+    return {}
 
 def set_cached_state(data):
     """Updates the RAM cache with new state data."""
