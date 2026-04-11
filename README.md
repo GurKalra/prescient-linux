@@ -122,35 +122,9 @@ Prescient is a FOSS project built for real Linux users. If you want to add new a
 
 Prescient utilizes a fully-mocked, zero-I/O test suite. We use `pytest` and `pytest-mock` to intercept all system calls (`subprocess.run`, `shutil`, `os`). **No root access is required, no real packages are modified, and no network requests are made during testing.**
 
-**Current Test Coverage:**
-
-- **Vanguard Engine (`tests/vanguard/`):** Fully covered (`test_boot.py`, `test_security.py`, `test_system.py`). Validates `/boot` saturation limits, Secure Boot states, and DKMS collision VETOs.
-- **Recovery Engine (`tests/recovery/`):** Fully covered (`test_snapshot.py`). Validates Timeshift/BTRFS guardrails, disk space checks, and cooldown timers.
-- **Core Utilities (`tests/core/`):** Partial coverage (`test_mirror_checker.py`).
-
-**How to Run Tests:**
-
-1. Install the development dependencies:
-
-```bash
-pip install -e ".[dev]"
-```
-
-2. Run the full suite with verbose output:
-
-```bash
-pytest tests/ -v
-```
-
-3. Run a specific test module:
-
-```bash
-pytest tests/vanguard/test_security.py -v
-```
-
 Tests are located in `tests/` and use `pytest` with `pytest-mock` for subprocess isolation. All tests mock external system calls, which is no root access, no real `dpkg`, no network requests are made during the test run.
 
-For the full testing philosophy, mock strategy, and how to add new tests, see the [Testing Guide](TESTING.md).
+## For the full testing philosophy, mock strategy, and how to add new tests, see the [Testing Guide](TESTING.md).
 
 ## License
 
