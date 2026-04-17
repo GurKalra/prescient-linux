@@ -103,6 +103,7 @@ prescient-linux/
     ├── core/
     │   ├── __init__.py
     │   ├── test_cache.py           # Tests /dev/shm RAM cache TTL and permissions
+    │   ├── test_hooks.py           # Tests APT/Pacman hook installation and initramfs injection
     │   ├── test_mirror_checker.py  # Tests concurrent mirror health auditor
     │   └── test_update_checker.py  # Tests OTA version check and 24-hour cache
     ├── intelligence/
