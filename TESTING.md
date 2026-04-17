@@ -52,6 +52,7 @@ pytest tests/vanguard/test_boot.py::test_analyze_boot_health_veto_on_low_boot_sp
 tests/
 ├── core/
 │   ├── test_cache.py               # /dev/shm RAM cache TTL and permission logic
+│   ├── test_hooks.py               # APT/Pacman hook installation and initramfs injection
 │   ├── test_mirror_checker.py      # Concurrent mirror health auditor
 │   └── test_update_checker.py      # OTA version check and 24-hour cache logic
 ├── intelligence/
@@ -255,6 +256,38 @@ Validates the `/dev/shm` RAM cache used to persist the Secure Boot status betwee
 | `test_set_cached_state_overwrites_existing_key`             | Latest value wins when the same key is set twice                                                                       |
 | `test_set_cached_state_applies_0o600_permissions`           | Sets `0o600` permissions so only root can read/write the cache                                                         |
 | `test_set_cached_state_fails_silently_on_write_error`       | Does not raise when `/dev/shm` write fails. It uses `MagicMock` as `CACHE_FILE` to avoid Python 3.12 slot restrictions |
+
+---
+
+---
+
+### `tests/core/test_hooks.py`
+
+**Module:** `prescient/core/hooks.py`
+
+Validates the hook installer for both APT (Ubuntu/Debian) and Pacman (Arch). `shutil.copy`, `os.chmod`, and `subprocess.run` are mocked so no files are written to `/etc/apt`, `/etc/pacman.d`, or `/etc/initramfs-tools`. `typer.Exit` is caught directly (not `SystemExit`) since `hooks.py` raises it outside a Typer app context. The `Path` mock uses `side_effect=lambda p: mock if str(p) == "/exact/path" else Path(p)` to intercept only the specific path being written, allowing all other `Path()` calls (source file resolution, initramfs paths) to resolve normally.
+
+**Key design validated:** The PM routing logic (apt → `install_apt_hook`, pacman → `install_pacman_hook`), the exact hook file content (both `DPkg::Pre-Install-Pkgs`/`Version "3"` for APT and `NeedsTargets`/`AbortOnFail` for Pacman), the correct destination paths for both `shutil.copy` calls in `install_ramdisk_hook`, and the early-return guard when the rescue binary copy fails.
+
+| Test                                                                   | What it validates                                                                                     |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `test_install_exits_without_root`                                      | Raises `typer.Exit(code=1)` immediately when not root. Neither hook installer is called               |
+| `test_install_routes_to_apt_on_ubuntu`                                 | Detects APT and calls `install_apt_hook` + `install_ramdisk_hook("apt")`                              |
+| `test_install_routes_to_pacman_on_arch`                                | Detects Pacman and calls `install_pacman_hook` + `install_ramdisk_hook("pacman")`                     |
+| `test_install_exits_on_unsupported_package_manager`                    | Raises `typer.Exit(code=1)` when neither `apt` nor `pacman` is detected                               |
+| `test_install_apt_hook_writes_correct_path`                            | Writes hook to `/etc/apt/apt.conf.d/99prescient-guardian`                                             |
+| `test_install_apt_hook_content_contains_predict`                       | Written content contains `prescient predict`, `Version "3"`, and the binary path                      |
+| `test_install_apt_hook_exits_on_write_failure`                         | Raises `typer.Exit(code=1)` on `PermissionError`                                                      |
+| `test_install_pacman_hook_creates_hook_directory`                      | Creates `/etc/pacman.d/hooks/` with `parents=True, exist_ok=True`                                     |
+| `test_install_pacman_hook_content_contains_required_fields`            | Written content contains `NeedsTargets`, `AbortOnFail`, `PreTransaction`, and the binary path         |
+| `test_install_pacman_hook_exits_on_write_failure`                      | Raises `typer.Exit(code=1)` on `PermissionError`                                                      |
+| `test_install_ramdisk_hook_apt_copies_rescue_binary`                   | First `shutil.copy` delivers rescue binary to `/usr/local/bin/prescient-rescue` with `0o755`          |
+| `test_install_ramdisk_hook_apt_installs_ubuntu_hook`                   | Second `shutil.copy` delivers Ubuntu hook to `/etc/initramfs-tools/hooks/prescient-hook` with `0o755` |
+| `test_install_ramdisk_hook_apt_runs_update_initramfs`                  | Calls exactly `["update-initramfs", "-u"]`                                                            |
+| `test_install_ramdisk_hook_pacman_installs_arch_hook`                  | Second `shutil.copy` delivers Arch hook to `/etc/initcpio/install/prescient-hook` with `0o755`        |
+| `test_install_ramdisk_hook_pacman_runs_mkinitcpio`                     | Calls exactly `["mkinitcpio", "-P"]`                                                                  |
+| `test_install_ramdisk_hook_returns_early_on_rescue_copy_failure`       | `subprocess.run` is never called when the rescue binary copy fails                                    |
+| `test_install_ramdisk_hook_handles_ramdisk_rebuild_failure_gracefully` | Does not raise when `update-initramfs` exits non-zero only failure is logged.                         |
 
 ---
 
